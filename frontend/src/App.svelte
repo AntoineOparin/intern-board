@@ -1,11 +1,17 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import Icon from "./lib/components/Icon.svelte";
   import Sidebar from "./lib/components/Sidebar.svelte";
   import Toast from "./lib/components/Toast.svelte";
   import Placeholder from "./pages/Placeholder.svelte";
   import FindPeople from "./pages/people/FindPeople.svelte";
   import Integrations from "./pages/profile/Integrations.svelte";
+  import Board from "./pages/board/Board.svelte";
+  import Drawer from "./lib/components/Drawer.svelte";
+  import { board, filtersChanged, loadListings, updateNewCount } from "./lib/stores/board.svelte";
+  import { filters, restoreFilters } from "./lib/stores/filters.svelte";
+  import { refreshStatus } from "./lib/stores/ranking.svelte";
+  import { visitBaseline, trackActivity } from "./lib/visits";
   import { route, startRouter, VIEWS, type View } from "./lib/stores/router.svelte";
   import { loadMeta } from "./lib/stores/meta.svelte";
   import { loadTracker } from "./lib/stores/tracker.svelte";
@@ -15,7 +21,20 @@
     board: "Internship board", matches: "Best matches", tracker: "Applications", companies: "Company watchlist",
     profile: "Your profile", resume: "Resume tailor", cover: "Cover letter", people: "Find People",
   };
+  // Before anything renders: the "new since last visit" baseline, saved filters, then the route.
+  board.prevVisit = visitBaseline();
+  restoreFilters();
+  const stopRouter = startRouter();
   const section = $derived(VIEWS[route.view]);
+
+  // "Best matches" is the board sorted by match; going back to the board restores newest first.
+  $effect(() => {
+    const view = route.view, previous = route.previous;
+    untrack(() => {
+      if (view === "matches" && filters.sort !== "match") { filters.sort = "match"; if (previous) filtersChanged(); }
+      if (view === "board" && previous === "matches" && filters.sort === "match") { filters.sort = "posted"; filtersChanged(); }
+    });
+  });
 
   // ---------- mobile menu ----------
   let navOpen = $state(false);
@@ -30,8 +49,10 @@
   }
 
   onMount(() => {
-    const stop = startRouter();
+    const stopActivity = trackActivity();
     let timer: ReturnType<typeof setInterval> | undefined;
+    // Scores for listings added since the last check are filled in by the status call.
+    refreshStatus().then(s => { if (s?.computed && filters.sort === "match") loadListings(true); });
     (async () => {
       let m = await loadMeta();
       // On the very first run the server is still importing; wait for it.
@@ -41,9 +62,11 @@
       }
       await loadTracker();
       loadProfile().catch(() => {});
+      filtersChanged();
+      updateNewCount().catch(() => {});
       timer = setInterval(() => loadMeta().catch(() => {}), 60 * 1000);
     })().catch(() => {});
-    return () => { stop(); clearInterval(timer); };
+    return () => { stopRouter(); stopActivity(); clearInterval(timer); };
   });
 </script>
 
@@ -62,8 +85,8 @@
 <div class="scrim" id="scrim" hidden={!navOpen} onclick={() => (navOpen = false)}></div>
 
 <main id="main" tabindex="-1" bind:this={main}>
-  <section id="board-view" class="view" aria-label="Internship board" hidden={section !== "board"}>
-    <Placeholder title={TITLES[route.view === "matches" ? "matches" : "board"]} view={route.view === "matches" ? "matches" : "board"} />
+  <section id="board-view" class="view" aria-labelledby="board-heading" hidden={section !== "board"}>
+    <Board visible={section === "board"} />
   </section>
   <section id="tracker-view" class="view" aria-label="Tracker" hidden={section !== "tracker"}>
     <Placeholder title={TITLES.tracker} view="tracker" />
@@ -83,4 +106,5 @@
   </section>
 </main>
 
+<Drawer />
 <Toast />

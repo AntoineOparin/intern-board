@@ -105,6 +105,7 @@ The Python tests only cover the backend, so "same as before" needs its own proof
    - filters (custom Select), date or match groups, infinite scroll;
    - the stats strip, the Refresh button and its "Updated … ago" status;
    - "New since last visit" (keys `baseline` and `lastActive`), Track buttons, match badges and reasons.
+   - **Status:** done. `frontend/src/pages/board/`, with `Select` (replaces `select.js`) and the shared side panel (`Drawer`) in `src/lib/components/`. Two board-file tests wait for later pages: "/ does nothing … on another page" needs Companies (step 6), and the side-panel dropdown test needs the Documents section (step 5).
 4. **Tracker:** kanban with drag and drop and keyboard alternatives, plus the side panel (stage, deadline, notes, Documents and People sections).
 5. **Resume tailor / Cover letter pages and `doc.html`:** the printable page with the one-page fit check, in-place editing and Save.
 6. **Companies and Profile:** watchlist table, add-by-link form, resume upload and extraction, preferences (including LinkedIn Premium), Ranking panel.
