@@ -8,6 +8,7 @@
   import Integrations from "./pages/profile/Integrations.svelte";
   import Board from "./pages/board/Board.svelte";
   import Drawer from "./lib/components/Drawer.svelte";
+  import Tracker from "./pages/tracker/Tracker.svelte";
   import { board, filtersChanged, loadListings, updateNewCount } from "./lib/stores/board.svelte";
   import { filters, restoreFilters } from "./lib/stores/filters.svelte";
   import { refreshStatus } from "./lib/stores/ranking.svelte";
@@ -88,8 +89,8 @@
   <section id="board-view" class="view" aria-labelledby="board-heading" hidden={section !== "board"}>
     <Board visible={section === "board"} />
   </section>
-  <section id="tracker-view" class="view" aria-label="Tracker" hidden={section !== "tracker"}>
-    <Placeholder title={TITLES.tracker} view="tracker" />
+  <section id="tracker-view" class="view" aria-labelledby="tracker-heading" hidden={section !== "tracker"}>
+    <Tracker />
   </section>
   <section id="companies-view" class="view" aria-label="Companies" hidden={section !== "companies"}>
     <Placeholder title={TITLES.companies} view="companies" />

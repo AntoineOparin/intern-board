@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import DocsSection from "../../pages/documents/DocsSection.svelte";
   import { drawer, closeDrawer } from "../stores/drawer.svelte";
   import { tracker, updateTracked, removeTracked } from "../stores/tracker.svelte";
   import type { Status } from "../types";
@@ -45,7 +46,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions (Escape closes a dialog) -->
 <dialog id="drawer" class="drawer" aria-labelledby="drawer-title" bind:this={dialog}
-  onclose={() => { shownId = null; closeDrawer(); }} onclick={e => { if (e.target === dialog) dialog.close(); }}>
+  onclose={() => { if (!dialog.open) { shownId = null; closeDrawer(); } /* a late close event after reopening is stale */ }} onclick={e => { if (e.target === dialog) dialog.close(); }}>
   {#if item}
     <form method="dialog" id="card-form" onsubmit={save}>
       <header class="drawer-head">
@@ -69,6 +70,7 @@
       <label class="field"><span>Notes</span><textarea name="notes" rows="5" placeholder="Referral, recruiter name, OA date…" bind:value={notes}></textarea></label>
       <div id="drawer-extras" class="drawer-extras">
         {#key item.id}
+          <DocsSection {item} />
           <section class="drawer-section">
             <h3>People</h3>
             <p class="muted">Find recruiters and people on the team at {item.company}, with emails and intro drafts.</p>

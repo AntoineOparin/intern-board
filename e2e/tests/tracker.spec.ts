@@ -53,6 +53,26 @@ test.describe("kanban", () => {
     await expect(app.column("offer").locator(".card")).toHaveCount(0);
   });
 
+  test("cards move with Alt and the arrow keys (new frontend)", async ({ app, api, page }) => {
+    test.skip(process.env.FRONTEND !== "new", "The old tracker has no keyboard moves; the plan adds them in step 4.");
+    await app.open("#tracker");
+    await app.card("Acme Robotics").focus();
+    await page.keyboard.press("Alt+ArrowRight");
+    await expect.poll(() => api.last("PUT", "/api/tracker/simplify:acme-swe-27")?.body).toEqual({ status: "applied", position: 2 });
+    await expect(app.column("applied").locator(".c-company")).toHaveText(["Orbit Analytics", "Acme Robotics"]);
+    await expect(app.card("Acme Robotics")).toBeFocused();
+    await expect(page.getByRole("status").filter({ hasText: "Moved to applied." })).toHaveCount(1);
+
+    await page.keyboard.press("Alt+ArrowUp");
+    await expect.poll(() => api.last("PUT", "/api/tracker/simplify:acme-swe-27")?.body).toEqual({ status: "applied", position: 0 });
+    await expect(app.column("applied").locator(".c-company")).toHaveText(["Acme Robotics", "Orbit Analytics"]);
+
+    await page.keyboard.press("Alt+ArrowLeft");
+    await page.keyboard.press("Alt+ArrowLeft"); // already in the first stage: stays
+    await expect(app.column("saved").locator(".c-company")).toHaveText(["Maple Systems", "Acme Robotics"]);
+    expect(api.calls("PUT", "/api/tracker/simplify:acme-swe-27")).toHaveLength(3);
+  });
+
   test("the empty tracker shows a prompt to browse listings", async ({ app, api, page }) => {
     api.tracker.items = [];
     await app.open("#tracker");
