@@ -533,4 +533,6 @@ select {
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  /* A loading indicator still needs to show that work is going on: spin it slowly instead. */
+  #refresh-btn.spinning .icon { animation-duration: 2s !important; }
 }

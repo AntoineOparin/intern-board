@@ -315,15 +315,56 @@ test.describe("refresh", () => {
     await expect(result).toHaveText("No new internships since the last check.");
     await expect(result).toHaveClass("muted");
 
-    api.refreshResult = { status: "already_running" };
-    await button.click();
-    await expect(result).toHaveText("A refresh is already running; the board updates when it finishes.");
-
     api.refreshResult = { status: "error", error: "SimplifyJobs returned HTTP 503" };
     await button.click();
     await expect(app.toast()).toHaveText("Refresh failed: SimplifyJobs returned HTTP 503");
     await expect(result).toHaveText("");
     await expect(button).toBeEnabled();
+  });
+
+  test("when a refresh is already running, the button keeps spinning until it finishes", async ({ app, api, page }) => {
+    await app.open();
+    const button = page.locator("#refresh-btn");
+    const result = page.locator("#refresh-result");
+    api.refreshResult = { status: "already_running" };
+    await button.click();
+    await expect(result).toHaveText("Another refresh is already running. Waiting for it to finish…");
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveClass(/spinning/);
+    await expect(button).toHaveText("Refreshing…");
+    await expect(page.locator("#sync-status")).toHaveText("Checking sources…");
+    // Still going after a poll or two.
+    await page.waitForTimeout(2500);
+    await expect(button).toHaveClass(/spinning/);
+
+    const before = api.listingQueries().length;
+    api.meta.last_refresh = NOW + 1; // the server's refresh finishes
+    await expect(result).toHaveText("Refresh finished. The board is up to date.", { timeout: 5000 });
+    await expect(result).toHaveClass("ok");
+    await expect(button).toBeEnabled();
+    await expect(button).not.toHaveClass(/spinning/);
+    await expect(button).toHaveText("Refresh");
+    expect(api.listingQueries().length).toBeGreaterThan(before); // the board reloaded
+  });
+
+  test("a refresh already running that fails shows the error", async ({ app, api, page }) => {
+    await app.open();
+    api.refreshResult = { status: "already_running" };
+    await page.locator("#refresh-btn").click();
+    await expect(page.locator("#refresh-result")).toHaveText("Another refresh is already running. Waiting for it to finish…");
+    api.meta.last_error = "HTTPError: 502";
+    await expect(app.toast()).toHaveText("Refresh failed: HTTPError: 502", { timeout: 5000 });
+    await expect(page.locator("#refresh-btn")).toBeEnabled();
+  });
+
+  test("the spinner still turns with Reduce motion on", async ({ app, api, page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await app.open();
+    const release = api.hold("POST", "/api/refresh");
+    await page.locator("#refresh-btn").click();
+    const duration = await page.locator("#refresh-btn .icon").evaluate(el => getComputedStyle(el).animationDuration);
+    expect(duration).toBe("2s");
+    release();
   });
 
   test("a failed last refresh and the first import show in the sync status", async ({ app, api, page }) => {

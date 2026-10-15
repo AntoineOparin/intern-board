@@ -3,7 +3,7 @@ import { SvelteSet } from "svelte/reactivity";
 import * as api from "../api";
 import { filters, saveFilters, clearFilterValues } from "./filters.svelte";
 import { ranking, refreshStatus } from "./ranking.svelte";
-import { loadMeta } from "./meta.svelte";
+import { meta, loadMeta } from "./meta.svelte";
 import { toast } from "./toast.svelte";
 import type { Listing, Sort } from "../types";
 
@@ -95,8 +95,26 @@ export function groupKey(l: Listing, sort: Sort, dayGroup: (ts: number | null) =
   return (l.company[0] || "#").toUpperCase().replace(/[^A-Z]/, "#");
 }
 
+const WAIT_POLL_MS = 2000;
+const WAIT_LIMIT_MS = 5 * 60 * 1000;
+
+/** Wait for a refresh the server is already running (hourly or at startup) to finish.
+ *  It's done when the last refresh time or the last error changes. */
+async function waitForRunningRefresh(before: { last_refresh: number; last_error: string }) {
+  const started = Date.now();
+  while (Date.now() - started < WAIT_LIMIT_MS) {
+    await new Promise(r => setTimeout(r, WAIT_POLL_MS));
+    let m;
+    try { m = await api.meta(); } catch { continue; }
+    if (m.last_refresh !== before.last_refresh) return { done: true as const, error: "" };
+    if (m.last_error && m.last_error !== before.last_error) return { done: true as const, error: m.last_error };
+  }
+  return { done: false as const, error: "" };
+}
+
 export async function refreshNow(reloadCompanies?: () => Promise<unknown>) {
   board.refreshing = true;
+  const before = { last_refresh: meta.data?.last_refresh ?? 0, last_error: meta.data?.last_error ?? "" };
   board.refreshResult = { text: "Checking every source, about 30–60 seconds.", cls: "muted" };
   board.syncOverride = { kind: "busy", text: "Checking sources…" };
   try {
@@ -106,7 +124,17 @@ export async function refreshNow(reloadCompanies?: () => Promise<unknown>) {
         ? { text: `${r.new.toLocaleString()} new internship${r.new === 1 ? "" : "s"}`, cls: "ok" }
         : { text: "No new internships since the last check.", cls: "muted" };
     } else if (r.status === "already_running") {
-      board.refreshResult = { text: "A refresh is already running; the board updates when it finishes.", cls: "muted" };
+      // Keep spinning until the server's own refresh finishes, then show what it found.
+      board.refreshResult = { text: "Another refresh is already running. Waiting for it to finish…", cls: "muted" };
+      const w = await waitForRunningRefresh(before);
+      if (w.error) {
+        board.refreshResult = { text: "", cls: "muted" };
+        toast(`Refresh failed: ${w.error}`);
+      } else {
+        board.refreshResult = w.done
+          ? { text: "Refresh finished. The board is up to date.", cls: "ok" }
+          : { text: "The refresh is taking longer than usual. The board updates when it finishes.", cls: "muted" };
+      }
     } else {
       board.refreshResult = { text: "", cls: "muted" };
       toast(`Refresh failed: ${r.error}`);
