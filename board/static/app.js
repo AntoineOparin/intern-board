@@ -71,22 +71,39 @@ async function api(path, options = {}) {
   } catch {
     const err = new Error("Couldn't reach Intern Board. Is ./run.sh still running?");
     toast(err.message);
+    err.shown = true;
     throw err;
   }
   if (!res.ok) {
     let detail = `${res.status}`;
-    try { const body = await res.json(); detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail); } catch {}
+    try { detail = errorDetail((await res.json()).detail) ?? detail; } catch {}
     const err = new Error(detail);
     err.status = res.status;
-    if (!options.quiet) toast(`Request failed: ${detail}`);
+    if (!options.quiet) { toast(`Request failed: ${detail}`); err.shown = true; }
     throw err;
   }
   return res.json();
 }
 
+// FastAPI sends a string for errors we raise, and a list of field errors when a request fails
+// validation ({loc: ["body", "full_name"], msg: "String should have at least 2 characters"}).
+function errorDetail(detail) {
+  if (typeof detail === "string") return detail;
+  if (!Array.isArray(detail)) return null;
+  return detail.map(d => {
+    const field = String(d.loc?.at(-1) ?? "").replace(/_/g, " ");
+    return field ? `${field[0].toUpperCase()}${field.slice(1)}: ${d.msg}` : d.msg;
+  }).join("; ");
+}
+
+// A failed request has already been shown in a toast; don't also report it as an uncaught error.
+window.addEventListener("unhandledrejection", e => { if (e.reason?.shown) e.preventDefault(); });
+
 function deadlineInfo(deadline) {
   if (!deadline) return null;
-  const days = Math.round((new Date(deadline + "T23:59:59") - Date.now()) / 86400000);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  // Whole calendar days from today (round absorbs a daylight-saving hour).
+  const days = Math.round((new Date(deadline + "T00:00:00") - today) / 86400000);
   const label = new Date(deadline + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return { days, label };
 }
@@ -183,6 +200,7 @@ function closeNav() {
   $("#nav-open").setAttribute("aria-expanded", "false");
 }
 $("#nav-open").addEventListener("click", openNav);
+$(".skip").addEventListener("click", e => { e.preventDefault(); $("#main").focus(); });
 $("#scrim").addEventListener("click", closeNav);
 document.addEventListener("keydown", e => { if (e.key === "Escape" && document.body.classList.contains("nav-open")) closeNav(); });
 
@@ -523,6 +541,7 @@ async function loadTracker() {
   const data = await api("/api/tracker");
   state.statuses = data.statuses;
   state.tracked = new Map(data.items.map(i => [i.id, i]));
+  state.trackerLoaded = true;
   $("#tracker-count").textContent = data.items.length || "";
   const due = data.items.filter(i => {
     const d = deadlineInfo(i.deadline);
@@ -648,6 +667,7 @@ drawer.addEventListener("click", e => { if (e.target === drawer) drawer.close();
 
 cardForm.addEventListener("submit", async e => {
   if (e.submitter?.value !== "save" || !drawerId) return;
+  e.preventDefault(); // close only once the save worked, so a failure keeps your edits
   const body = {
     status: cardForm.elements.status.value,
     deadline: cardForm.elements.deadline.value,
@@ -655,6 +675,7 @@ cardForm.addEventListener("submit", async e => {
   };
   const id = drawerId;
   await api(`/api/tracker/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+  drawer.close();
   await loadTracker();
   rerenderTrack(id);
 });
@@ -731,7 +752,7 @@ $("#add-company").addEventListener("submit", async e => {
   const url = f.elements.url.value.trim();
   f.classList.remove("invalid");
   msg.className = "form-msg";
-  if (!url) {
+  if (url.length < 3) {
     f.classList.add("invalid");
     msg.classList.add("error");
     msg.textContent = "Paste a link to the company's Greenhouse, Lever or Ashby job board.";
@@ -835,13 +856,27 @@ async function loadProfile() {
   return p;
 }
 
+let extracting = null; // the job being polled, so revisiting the page doesn't start another loop
+
 async function waitForExtraction(jobId) {
+  if (extracting === jobId) return;
+  extracting = jobId;
   const status = $("#resume-status");
-  for (;;) {
-    await new Promise(r => setTimeout(r, 2000));
-    const job = await api(`/api/ai/jobs/${jobId}`);
-    if (job.status === "error") { status.className = "form-msg error"; status.textContent = job.error; return; }
-    if (job.status === "done") { await loadProfile(); return; }
+  const started = Date.now();
+  try {
+    for (;;) {
+      await new Promise(r => setTimeout(r, 2000));
+      const job = await api(`/api/ai/jobs/${jobId}`);
+      if (job.status === "error") { status.className = "form-msg error"; status.textContent = job.error; return; }
+      if (job.status === "done") { extracting = null; await loadProfile(); return; }
+      if (Date.now() - started > 10 * 60 * 1000) {
+        status.className = "form-msg error";
+        status.textContent = "Reading your resume is taking too long. The app may have restarted; upload it again.";
+        return;
+      }
+    }
+  } finally {
+    if (extracting === jobId) extracting = null;
   }
 }
 
@@ -950,7 +985,7 @@ setInterval(markActive, 60 * 1000);
 document.addEventListener("visibilitychange", markActive);
 
 // ---------- start ----------
-(async function init() {
+document.addEventListener("DOMContentLoaded", async function init() {
   state.prevVisit = visitBaseline();
   restoreFilters();
   const [hashView, hashParams] = viewFromHash();
@@ -970,4 +1005,4 @@ document.addEventListener("visibilitychange", markActive);
   filtersChanged();
   updateNewCount();
   setInterval(loadMeta, 60 * 1000);
-})();
+});

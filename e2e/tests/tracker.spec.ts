@@ -1,4 +1,4 @@
-import { test, expect } from "../support/test";
+import { test, expect, NOW, HOUR } from "../support/test";
 
 test.describe("kanban", () => {
   test("five columns with counts, cards in position order, and deadline, closed and region tags", async ({ app, page }) => {
@@ -103,6 +103,29 @@ test.describe("side panel", () => {
     await expect(app.column("interviewing").locator(".c-company")).toContainText(["Maple Systems"]);
     await expect(app.card("Maple Systems").locator(".c-notes")).toHaveText("Phone screen booked");
     await expect(app.card("Maple Systems").locator(".tag").first()).toHaveText("Due Oct 21");
+  });
+
+  test("a failed save keeps the panel open with your edits", async ({ app, api }) => {
+    api.on("PUT", /^\/api\/tracker\//, { status: 500, json: { detail: "Database is locked" } });
+    await app.open("#tracker");
+    await app.card("Maple Systems").click();
+    await app.drawer().getByLabel("Notes").fill("Phone screen booked");
+    await app.drawer().getByRole("button", { name: "Save" }).click();
+    await expect(app.toast()).toHaveText("Request failed: Database is locked");
+    await expect(app.drawer()).toBeVisible();
+    await expect(app.drawer().getByLabel("Notes")).toHaveValue("Phone screen booked");
+  });
+
+  test("deadlines count calendar days, also in the morning", async ({ app, api, page }) => {
+    await page.clock.setFixedTime((NOW - 4 * HOUR) * 1000); // 10:00
+    api.tracked("simplify:acme-swe-27").deadline = "2026-10-13"; // yesterday
+    api.tracked("simplify:orbit-ml").deadline = "2026-10-14"; // today
+    api.tracked("negarprh:maple-firmware").deadline = "2026-10-15"; // tomorrow
+    await app.open("#tracker");
+    await expect(app.card("Acme Robotics").locator(".tag").first()).toHaveText("Overdue · Oct 13");
+    await expect(app.card("Orbit Analytics").locator(".tag").first()).toHaveText("Due today");
+    await expect(app.card("Maple Systems").locator(".tag").first()).toHaveText("Due Oct 15");
+    await expect(page.locator("[data-stat=due] .stat-value")).toHaveText("2");
   });
 
   test("clearing the deadline sends an empty string", async ({ app, api }) => {

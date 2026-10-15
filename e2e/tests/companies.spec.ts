@@ -80,6 +80,10 @@ test.describe("add a company by link", () => {
     await expect(page.locator("#add-company-msg")).toHaveClass(/error/);
     await expect(page.getByLabel("Job board link")).toBeFocused();
     expect(api.calls("POST", "/api/companies")).toHaveLength(0);
+    await page.getByLabel("Job board link").fill("ab");
+    await page.getByRole("button", { name: "Add company" }).click();
+    await expect(page.locator("#add-company-msg")).toHaveText("Paste a link to the company's Greenhouse, Lever or Ashby job board.");
+    expect(api.calls("POST", "/api/companies")).toHaveLength(0);
   });
 
   test("adds the board, reports what it found and reloads", async ({ app, api, page }) => {

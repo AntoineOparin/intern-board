@@ -125,18 +125,29 @@ test.describe("mobile menu", () => {
 
 test.describe("accessibility basics", () => {
   test("the skip link is the first tab stop and moves focus to the main content", async ({ app, page }) => {
-    await app.open("#board");
+    await app.open("#tracker");
     await page.keyboard.press("Tab");
     const skip = page.getByRole("link", { name: "Skip to content" });
     await expect(skip).toBeFocused();
     await expect(skip).toBeInViewport();
     await page.keyboard.press("Enter");
     await expect(page.locator("main#main")).toBeFocused();
+    // It stays on the current page.
+    await expect(app.section("tracker")).toBeVisible();
+    await expect(page).toHaveURL(/#tracker$/);
+  });
+
+  test("validation errors from the server are shown as readable text", async ({ app, api }) => {
+    api.on("PUT", /^\/api\/tracker\//, { status: 422, json: { detail: [
+      { type: "string_pattern_mismatch", loc: ["body", "deadline"], msg: "String should match pattern '^(\\d{4}-\\d{2}-\\d{2})?$'", input: "x" },
+    ] } });
+    await app.open();
+    await app.listing("Northwind Data", "Data Engineering Intern").getByRole("button", { name: "Track" }).click();
+    await expect(app.toast()).toHaveText("Request failed: Deadline: String should match pattern '^(\\d{4}-\\d{2}-\\d{2})?$'");
   });
 
   test("failed requests show a toast with the server's message", async ({ app, api, page }) => {
     api.on("PUT", /^\/api\/tracker\//, { status: 500, json: { detail: "Database is locked" } });
-    api.allowedPageErrors.push(/Database is locked/);
     await app.open();
     await app.listing("Northwind Data", "Data Engineering Intern").getByRole("button", { name: "Track" }).click();
     await expect(app.toast()).toHaveText("Request failed: Database is locked");
@@ -146,7 +157,6 @@ test.describe("accessibility basics", () => {
   test("an unreachable server shows the run.sh toast", async ({ app, api, page }) => {
     await app.open();
     await page.route("**/api/tracker/**", route => route.abort("connectionrefused"));
-    api.allowedPageErrors.push(/Couldn't reach Intern Board/);
     await app.listing("Northwind Data", "Data Engineering Intern").getByRole("button", { name: "Track" }).click();
     await expect(app.toast()).toHaveText("Couldn't reach Intern Board. Is ./run.sh still running?");
   });

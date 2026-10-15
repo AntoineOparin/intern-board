@@ -154,6 +154,19 @@ test.describe("step 2: recruiters or coffee chats", () => {
     await expect(view.getByRole("heading", { name: "Free searches" })).toBeVisible();
   });
 
+  test("out of credits without a renewal date from Prospeo", async ({ app, api, page }) => {
+    api.account = { ...accounts.empty, renews: null };
+    await app.open(route(ACME));
+    await expect(people(page).locator(".fp-out")).toHaveText(/^You're out of Prospeo credits until they renew\. /);
+    await expect(credits(page)).toHaveText("No credits left · renews monthly");
+  });
+
+  test("a link to a listing works with an empty tracker", async ({ app, api, page }) => {
+    api.tracker.items = [];
+    await app.open(route(ACME));
+    await expect(people(page).getByRole("heading", { name: "Who are you looking for at Acme Robotics?" })).toBeVisible();
+  });
+
   test("low credits show a warning in the credit count", async ({ app, api, page }) => {
     api.account = accounts.low;
     await app.open(route(ACME));
@@ -287,6 +300,16 @@ test.describe("step 3: people", () => {
     await expect(app.toast()).toHaveText("Prospeo no longer verifies Jordan Okafor's email. They may have left.");
   });
 
+  test("a failed Re-check restores the button's label", async ({ app, api, page }) => {
+    api.on("POST", "/api/people/recheck", detail(502, "Prospeo returned HTTP 500."));
+    await app.open(route(ACME, "&kind=recruiters"));
+    const button = person(page, "Jordan Okafor").locator(".fp-recheck");
+    await button.click();
+    await expect(app.toast()).toHaveText("Prospeo returned HTTP 500.");
+    await expect(button).toHaveText("Re-check (free)");
+    await expect(button).toBeEnabled();
+  });
+
   test("an old email still inside the free window is re-checked once, without a click", async ({ app, api, page }) => {
     Object.assign(api.sessions[ACME].contacts.recruiters[0], { email_stale: true, recheck_free: true, email_found_at: NOW - 40 * DAY });
     await app.open(route(ACME, "&kind=recruiters"));
@@ -332,9 +355,8 @@ test.describe("step 3: people", () => {
     await expect(credits(page)).toHaveText("No credits left · renews Nov 1");
   });
 
-  // Known bug: renderResults() has a local `search` (the saved search) that shadows the search()
-  // function, so this button throws "search is not a function". Enable once fixed.
-  test.fixme("Search again runs a new search for the same kind", async ({ app, api, page }) => {
+  test("Search again runs a new search for the same kind", async ({ app, api, page }) => {
+    api.jobOutcomes.people_search = { status: "done", result: { count: 6, free: false, charged: true }, polls: 1 };
     await app.open(route(ACME, "&kind=recruiters"));
     const sessions = api.calls("GET", "/api/people/session").length;
     await people(page).getByRole("button", { name: "Search again · 1 credit" }).click();
@@ -351,6 +373,11 @@ test.describe("step 3: people", () => {
     await expect(form.getByLabel("Title (optional)")).toHaveAttribute("placeholder", "University Recruiter");
     await form.getByRole("button", { name: "Add" }).click();
     await expect(form.locator(".form-msg")).toHaveText("Enter their name.");
+    expect(api.calls("POST", "/api/people/contacts")).toHaveLength(0);
+
+    await form.getByLabel("Name").fill("R");
+    await form.getByRole("button", { name: "Add" }).click();
+    await expect(form.locator(".form-msg")).toHaveText("Enter their full name.");
     expect(api.calls("POST", "/api/people/contacts")).toHaveLength(0);
 
     await form.getByLabel("Name").fill("Robin Park");
@@ -459,7 +486,7 @@ test.describe("intro drafts", () => {
   });
 
   test("Write asks Claude only on click, shows progress, then the draft", async ({ app, api, page }) => {
-    api.jobOutcomes.outreach = undefined;
+    api.jobOutcomes.outreach = () => ({ ...defaultDraft(), polls: 1 });
     await app.open(route(ACME, "&kind=recruiters"));
     await person(page, "Priya Nair").locator(".fp-person-head").click();
     const draft = person(page, "Priya Nair").locator(".fp-draft");
@@ -472,14 +499,14 @@ test.describe("intro drafts", () => {
     expect(api.jobRequests()).toHaveLength(0);
 
     await draft.getByRole("button", { name: "Write LinkedIn note" }).click();
-    await expect(draft.locator(".fp-draft-foot [role=status]")).toHaveText(/^Writing…/);
+    await expect(draft.locator(".fp-draft-foot [role=status]")).toHaveText(/^Writing… \d+s$/);
     await expect(draft.getByRole("textbox", { name: "Intro draft" })).toHaveAttribute("placeholder", "Writing a LinkedIn note with Claude…");
     expect(api.jobRequests()).toHaveLength(1);
     expect(api.jobRequests("outreach")[0].body).toEqual({
       kind: "outreach",
       payload: { listing_id: ACME, person_id: "pr-priya", channel: "linkedin_note", recipient_type: "recruiter" },
     });
-    await expect(draft.getByRole("textbox", { name: "Intro draft" })).toHaveValue(/^Hi, I'm applying to Acme's Summer 2027/, { timeout: 5000 });
+    await expect(draft.getByRole("textbox", { name: "Intro draft" })).toHaveValue(/^Hi Priya, I built a Python service/, { timeout: 6000 });
     await expect(draft.locator(".fp-draft-foot [role=status]")).toHaveText("");
     await expect(draft.locator(".fp-count")).toHaveText(/^\d+ \/ 200$/);
     await expect(draft.getByRole("button", { name: "Rewrite" })).toBeVisible();

@@ -133,7 +133,7 @@
         <h2>Who are you looking for at ${esc(s.company)}?</h2>
         <p class="muted">Pick one before each search.</p>
         ${s.configured ? "" : `<p class="form-msg error">Add your Prospeo API key under <a class="link" href="#profile">My profile → Integrations</a> to search.</p>`}
-        ${s.configured && noCredits() ? `<p class="fp-out">You're out of Prospeo credits until ${esc(shortDate(st.account.renews))}. People you've already found still work. Use the free searches below, then add who you find.</p>` : ""}
+        ${s.configured && noCredits() ? `<p class="fp-out">You're out of Prospeo credits ${st.account.renews ? `until ${esc(shortDate(st.account.renews))}` : "until they renew"}. People you've already found still work. Use the free searches below, then add who you find.</p>` : ""}
         <div class="fp-choices">
           ${card("recruiters", "badge", "Recruiters", "University and technical recruiters who hire interns.")}
           ${card("team", "coffee", "Coffee chats", `${s.team_label} on the team you're applying to.`)}
@@ -168,7 +168,7 @@
       const website = $(".fp-site-form input", st.el).value.trim();
       try {
         await api("/api/people/site", { method: "PUT", body: JSON.stringify({ listing_id: st.session.listing.id, website }) });
-        await openListing(st.session.listing.id, st.kind);
+        await openListing(st.session.listing.id, st.kind, st.add);
         toast("Website saved. Run the search again to find people there.");
       } catch {}
     });
@@ -303,24 +303,24 @@
   }
 
   async function renderResults(kind) {
-    const s = st.session, people = s.contacts[kind] || [], search = s.searches[kind];
-    const countryNote = search && !search.country_filtered && people.some(p => p.source === "prospeo")
+    const s = st.session, people = s.contacts[kind] || [], lastSearch = s.searches[kind];
+    const countryNote = lastSearch && !lastSearch.country_filtered && people.some(p => p.source === "prospeo")
       ? `<p class="muted fp-note">No one matched in this job's country, so these are from other locations.</p>` : "";
-    const staleNote = search?.stale
-      ? `<p class="fp-stale">This list is from ${esc(dayDate(search.searched_at))}. People change roles and companies, so search again for a fresh one before reaching out.</p>` : "";
+    const staleNote = lastSearch?.stale
+      ? `<p class="fp-stale">This list is from ${esc(dayDate(lastSearch.searched_at))}. People change roles and companies, so search again for a fresh one before reaching out.</p>` : "";
     const againLabel = noCredits() ? "No credits left" : "Search again · 1 credit";
     st.el.innerHTML = header(s.listing, s.site?.logo_url) + `
       <div class="fp-results-head">
         <a class="fp-back link" href="#people?listing=${encodeURIComponent(s.listing.id)}">${icon("back")}Back</a>
         <p class="fp-count-line">${people.length} ${KIND_TEXT[kind].noun(people.length)} at ${esc(s.company)}</p>
         <button type="button" class="btn btn-quiet fp-again" title="Run the search again on Prospeo"
-          ${noCredits() || !s.configured ? "disabled" : ""}>${search ? againLabel : noCredits() ? againLabel : "Search Prospeo · 1 credit"}</button>
+          ${noCredits() || !s.configured ? "disabled" : ""}>${lastSearch ? againLabel : noCredits() ? againLabel : "Search Prospeo · 1 credit"}</button>
       </div>
       <p class="form-msg" role="status" id="fp-results-msg"></p>
       ${staleNote}${countryNote}
-      ${people.length ? `<div class="fp-people">${people.map(personHTML).join("")}</div>` : search ? noOneHTML(s) : ""}
+      ${people.length ? `<div class="fp-people">${people.map(personHTML).join("")}</div>` : lastSearch ? noOneHTML(s) : ""}
       ${addFormHTML(kind)}
-      ${!people.length && !search ? freeLinksHTML(s, [kind === "recruiters" ? "recruiters" : "team", "google", "alumni"]) : ""}`;
+      ${!people.length && !lastSearch ? freeLinksHTML(s, [kind === "recruiters" ? "recruiters" : "team", "google", "alumni"]) : ""}`;
     $(".fp-again", st.el).addEventListener("click", e => search(kind, e.currentTarget));
     bindAddForm(kind);
     if (!people.length) { bindSite(); return; }
@@ -374,7 +374,9 @@
     form.addEventListener("submit", async e => {
       e.preventDefault();
       const f = new FormData(form), msg = $(".form-msg", form);
-      if (!f.get("full_name").trim()) { msg.className = "form-msg error"; msg.textContent = "Enter their name."; return; }
+      const name = f.get("full_name").trim();
+      if (!name) { msg.className = "form-msg error"; msg.textContent = "Enter their name."; return; }
+      if (name.length < 2) { msg.className = "form-msg error"; msg.textContent = "Enter their full name."; return; }
       try {
         const c = await api("/api/people/contacts", { method: "POST", quiet: true, body: JSON.stringify({
           listing_id: st.session.listing.id, kind, full_name: f.get("full_name"), title: f.get("title"),
@@ -396,6 +398,7 @@
   }
 
   async function recheck(kind, personId, button, { quiet = false } = {}) {
+    const label = button?.textContent;
     if (button) { button.disabled = true; button.textContent = "Checking…"; }
     try {
       const c = await api("/api/people/recheck", { method: "POST", quiet: true,
@@ -408,7 +411,7 @@
       renderResults(kind);
     } catch (err) {
       if (!quiet) toast(err.message);
-      if (button) { button.disabled = false; button.textContent = "Re-check"; }
+      if (button) { button.disabled = false; button.textContent = label; }
     }
     loadCredits();
   }
@@ -493,14 +496,14 @@
     };
     const key = `${c.person_id}|${channel}`;
     const wait = async promise => {
-      msg.className = "form-msg busy";
+      msg.className = "form-msg fp-draft-msg busy";
       msg.textContent = "Writing…";
       show(null, true);
       try {
         const d = await promise;
-        if (box.isConnected) { msg.className = "form-msg"; msg.textContent = ""; show(d); }
+        if (box.isConnected) { msg.className = "form-msg fp-draft-msg"; msg.textContent = ""; show(d); }
       } catch (err) {
-        if (box.isConnected) { show(st.drafts.get(key)); msg.className = "form-msg error"; msg.textContent = err.message; }
+        if (box.isConnected) { show(st.drafts.get(key)); msg.className = "form-msg fp-draft-msg error"; msg.textContent = err.message; }
       }
     };
     const generate = () => {
@@ -534,7 +537,7 @@
         await api(`/api/people/drafts/${encodeURIComponent(d.id)}`, { method: "PUT",
           body: JSON.stringify({ body: body.value, subject: subject.value }), quiet: true });
         Object.assign(d, { body: body.value, subject: subject.value });
-      } catch (err) { msg.className = "form-msg error"; msg.textContent = err.message; }
+      } catch (err) { msg.className = "form-msg fp-draft-msg error"; msg.textContent = err.message; }
     };
     body.addEventListener("blur", save);
     subject.addEventListener("blur", save);
@@ -567,7 +570,7 @@
     loadCredits();  // free; keeps the count and the out-of-credits state current
     const listing = params.get("listing");
     if (!listing) { st.session = null; renderPick(); return; }
-    if (!IB.state.tracked.size && !st.session) { el.innerHTML = header(null); return; } // tracker still loading
+    if (!IB.state.trackerLoaded) { el.innerHTML = header(null); return; } // tracker still loading
     openListing(listing, params.get("kind"), params.get("add") === "1");
   };
 
@@ -607,6 +610,11 @@
         e.preventDefault();
         const key = e.target.elements.key.value.trim();
         if (!key) return;
+        if (!/^[A-Za-z0-9_-]{10,200}$/.test(key)) {
+          msg.className = "form-msg error fp-int-msg";
+          msg.textContent = "That doesn't look like a Prospeo API key. Copy it from the API page on prospeo.io.";
+          return;
+        }
         try { draw(await api("/api/integrations/prospeo", { method: "PUT", body: JSON.stringify({ key }), quiet: true })); st.account = null; }
         catch (err) { msg.className = "form-msg error fp-int-msg"; msg.textContent = err.message; }
       });
@@ -615,6 +623,7 @@
         draw({ configured: false });
       });
       $(".fp-forget", container).addEventListener("click", async () => {
+        if (!confirm("Delete every saved contact and search? This can't be undone.")) return;
         const r = await api("/api/people/contacts", { method: "DELETE" });
         msg.className = "form-msg ok fp-int-msg"; msg.textContent = `Deleted ${r.deleted} saved contact${r.deleted === 1 ? "" : "s"}.`;
       });

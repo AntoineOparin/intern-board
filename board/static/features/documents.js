@@ -97,7 +97,7 @@
             ${d.stale ? `<span class="tag warn" title="Your profile changed after this was written">Older profile</span>` : ""}
             ${d.notes?.description_used === false ? `<span class="tag" title="Written from the title and company only">No description</span>` : ""}
           </span>
-          <a class="btn btn-quiet docs-open" href="/doc.html?id=${enc(d.id)}" target="_blank" rel="noopener">Open ↗</a>
+          <a class="btn btn-quiet docs-open" href="doc.html?id=${enc(d.id)}" target="_blank" rel="noopener">Open ↗</a>
           <button type="button" class="btn btn-danger-quiet docs-delete">Delete</button>
         </li>`).join("") : `<li class="muted docs-empty">No documents for this listing yet.</li>`;
     }
@@ -180,13 +180,13 @@
           lastNotes.set(item.id, doc.content.notes);
           t.showNotes(doc.content.notes);
         } catch {}
-        t.msg(`${KIND_LABEL[kind]} ready. Open it to review, edit and download.`, "ok");
+        t.msg(`${KIND_LABEL[kind === "tailor_resume" ? "resume" : kind]} ready. Open it to review, edit and download.`, "ok");
       });
     }
 
     q(".docs-resume").addEventListener("click", () => writeDoc("tailor_resume", {}, "Tailoring resume…"));
     q(".docs-letter-btn").addEventListener("click", () =>
-      writeDoc("cover_letter", { tone: q(".docs-tone").value }, "Writing cover letter…"));
+      writeDoc("cover_letter", { tone: q("select.docs-tone").value }, "Writing cover letter…"));
 
     q(".docs-load").addEventListener("click", () =>
       start("fetch_description", { listing_id: item.id }, "Loading job description…", (result, t) => {

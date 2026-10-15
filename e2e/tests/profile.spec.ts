@@ -80,6 +80,20 @@ test.describe("resume", () => {
     await expect(page.locator("#resume-status")).toHaveText("Profile updated 2d ago.", { timeout: 6000 });
   });
 
+  test("revisiting the page during an extraction doesn't start a second polling loop", async ({ app, api, page }) => {
+    api.profile = { ...fixture("profile-empty.json"), has_resume: true, extract_job: "job-pending" };
+    api.jobs.set("job-pending", { id: "job-pending", kind: "extract_profile", payload: {}, polls: 0 });
+    api.jobOutcomes.extract_profile = { status: "done", polls: 100, result: { ok: true } };
+    await app.open("#profile");
+    await app.nav("Tracker").click();
+    await app.nav("My profile").click();
+    await app.nav("Tracker").click();
+    await app.nav("My profile").click();
+    await page.waitForTimeout(4500);
+    // One loop polls every 2 seconds.
+    expect(api.calls("GET", "/api/ai/jobs/job-pending").length).toBeLessThanOrEqual(3);
+  });
+
   test("the profile JSON can be fixed by hand; invalid JSON is caught first", async ({ app, api, page }) => {
     await app.open("#profile");
     await page.getByText("Fix extraction mistakes (edit profile JSON)").click();
@@ -219,6 +233,14 @@ test.describe("integrations", () => {
     await expect(panel(page).locator(".fp-int-status")).toHaveText(/^Key pk_ma…abcd · FREE plan/);
   });
 
+  test("a key that can't be valid is caught before sending", async ({ app, api, page }) => {
+    await app.open("#profile");
+    await panel(page).getByRole("textbox", { name: "Prospeo API key" }).fill("short");
+    await panel(page).getByRole("button", { name: "Replace key" }).click();
+    await expect(panel(page).locator(".fp-int-msg")).toHaveText("That doesn't look like a Prospeo API key. Copy it from the API page on prospeo.io.");
+    expect(api.calls("PUT", "/api/integrations/prospeo")).toHaveLength(0);
+  });
+
   test("a rejected key shows Prospeo's message", async ({ app, api, page }) => {
     api.on("PUT", "/api/integrations/prospeo", detail(422, "Prospeo returned HTTP 401."));
     await app.open("#profile");
@@ -248,8 +270,14 @@ test.describe("integrations", () => {
     await expect(panel(page).locator(".fp-int-status .form-msg.error")).toHaveText("Prospeo returned HTTP 401.");
   });
 
-  test("Delete saved contacts deletes them all and reports how many", async ({ app, api, page }) => {
+  test("Delete saved contacts asks first, then deletes them all and reports how many", async ({ app, api, page }) => {
     await app.open("#profile");
+    let message = "";
+    page.once("dialog", d => { message = d.message(); d.dismiss(); });
+    await panel(page).getByRole("button", { name: "Delete saved contacts" }).click();
+    expect(message).toBe("Delete every saved contact and search? This can't be undone.");
+    expect(api.calls("DELETE", "/api/people/contacts")).toHaveLength(0);
+    page.once("dialog", d => d.accept());
     await panel(page).getByRole("button", { name: "Delete saved contacts" }).click();
     await expect(panel(page).locator(".fp-int-msg")).toHaveText("Deleted 6 saved contacts.");
     expect(api.calls("DELETE", "/api/people/contacts")).toHaveLength(1);

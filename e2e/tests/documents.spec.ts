@@ -32,7 +32,7 @@ test.describe("tool pages", () => {
     await expect(items).toHaveCount(2);
     await expect(items.nth(0).locator(".docs-item-main")).toHaveText(/Resume\s+2d ago · edited/);
     await expect(items.nth(0).locator(".tag")).toHaveCount(0);
-    await expect(items.nth(0).getByRole("link", { name: "Open ↗" })).toHaveAttribute("href", "/doc.html?id=doc-resume-1");
+    await expect(items.nth(0).getByRole("link", { name: "Open ↗" })).toHaveAttribute("href", "doc.html?id=doc-resume-1");
     await expect(items.nth(0).getByRole("link", { name: "Open ↗" })).toHaveAttribute("target", "_blank");
     await expect(items.nth(1).locator(".docs-item-main")).toHaveText(/Cover letter\s+5d ago/);
     await expect(items.nth(1).locator(".tag")).toHaveText(["Older profile", "No description"]);
@@ -84,9 +84,7 @@ test.describe("writing documents", () => {
     await expect(body(page).getByRole("button", { name: "Tailor resume" })).toBeEnabled();
   });
 
-  // Known bug: writeDoc() looks up KIND_LABEL by the job kind ("tailor_resume"), whose labels are
-  // keyed "resume", so the page says "undefined ready. …". Enable once fixed.
-  test.fixme("Tailor resume finishes with 'Resume ready'", async ({ app, page }) => {
+  test("Tailor resume finishes with 'Resume ready'", async ({ app, page }) => {
     await app.open("#resume");
     await body(page).getByRole("button", { name: "Tailor resume" }).click();
     await expect(body(page).locator(".docs-msg")).toHaveText("Resume ready. Open it to review, edit and download.", { timeout: 6000 });
@@ -102,10 +100,7 @@ test.describe("writing documents", () => {
     await expect(body(page).locator(".docs-notes .docs-notes-title")).toHaveText(["Check before sending", "Draws on"]);
   });
 
-  // Known bug: select.js copies the select's classes onto its wrapper, so documents.js's
-  // querySelector(".docs-tone") finds the wrapper <span> and the tone is never sent (the server
-  // then writes a formal letter). Enable once fixed.
-  test.fixme("Write cover letter sends the tone picked in the dropdown", async ({ app, api, page }) => {
+  test("Write cover letter sends the tone picked in the dropdown", async ({ app, api, page }) => {
     await app.open("#cover");
     await app.choose("Cover letter tone", "Conversational");
     await body(page).getByRole("button", { name: "Write cover letter" }).click();

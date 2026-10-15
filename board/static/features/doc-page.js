@@ -252,7 +252,7 @@
 
   $("#doc-back").addEventListener("click", () => {
     if (history.length > 1 && document.referrer.startsWith(location.origin)) history.back();
-    else location.href = "/#tracker";
+    else location.href = "./#tracker";
   });
 
   sheet.addEventListener("focusout", () => { if (dirty) fit(); });

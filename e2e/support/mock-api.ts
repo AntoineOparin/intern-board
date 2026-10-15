@@ -30,8 +30,7 @@ export const detail = (status: number, text: string): Reply => ({ status, json: 
 export class MockApi {
   readonly requests: Req[] = [];
   readonly unexpected: string[] = [];
-  /** Uncaught page errors a test expects. The current app leaves failed requests in click
-   *  handlers as unhandled rejections (after showing a toast), so error-path tests list them. */
+  /** Uncaught page errors a test expects (none today). Any other uncaught error fails the test. */
   readonly allowedPageErrors: RegExp[] = [];
   readonly origin: string;
 
@@ -141,10 +140,6 @@ export class MockApi {
     }
     const req: Req = { method: request.method(), path: decodeURIComponent(url.pathname), query: Object.fromEntries(url.searchParams), body, raw };
     this.requests.push(req);
-    // The current app starts API calls from app.js before features/*.js have run. A very fast reply
-    // can render the board before their hooks register (no match badges, no Find People page).
-    // Answering after DOMContentLoaded, when every script has run, keeps the tests deterministic.
-    await this.page.waitForLoadState("domcontentloaded");
 
     for (const h of [...this.holds]) if (h.method === req.method && match(h.path, req.path)) await h.promise;
 
