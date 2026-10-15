@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Personal board of software and tech internships in Canada and the US, with an application tracker.">
+  <title>Intern Board</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231f6f6b'/><path d='M9 21.5c2 2 4.3 3 7 3s5-1 7-3M16 8v16M12 12h8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="features/ranking.css">
+  <link rel="stylesheet" href="features/documents.css">
+  <link rel="stylesheet" href="features/people.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="mobile-bar">
+    <button type="button" class="icon-btn" id="nav-open" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <span class="brand-text">Intern Board</span>
+  </header>
+
+  <aside class="sidebar" id="sidebar" aria-label="Main">
+    <a class="brand" href="#board" data-view-link="board">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><path d="M9 21.5c2 2 4.3 3 7 3s5-1 7-3M16 8v16M12 12h8"/></svg>
+      <span class="brand-text">Intern Board</span>
+    </a>
+    <nav class="nav">
+      <p class="nav-label">Internships</p>
+      <a href="#board" data-view-link="board"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 9.5h17M8 5V3.5M16 5V3.5"/></svg><span>Internship board</span></a>
+      <a href="#matches" data-view-link="matches"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.5l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg><span>Best matches</span></a>
+      <a href="#companies" data-view-link="companies"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20.5V6l7-2.5v17M11 9.5l9 3v8M2.5 20.5h19M7 9h1M7 12.5h1M7 16h1M15 15h1"/></svg><span>Companies</span><span id="companies-count" class="count"></span></a>
+
+      <p class="nav-label">Tracker</p>
+      <a href="#tracker" data-view-link="tracker"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg><span>Tracker</span><span id="tracker-count" class="count"></span></a>
+
+      <p class="nav-label">Internship tools</p>
+      <a href="#resume" data-view-link="resume"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M12 17v-6M9.5 13.5 12 11l2.5 2.5"/></svg><span>Resume tailor</span></a>
+      <a href="#cover" data-view-link="cover"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M14.5 6.5l3 3"/></svg><span>Cover letter</span></a>
+      <a href="#people" data-view-link="people"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.7 5.5-4.7s4.9 1.7 5.5 4.7M15.5 5.6a3 3 0 0 1 0 5.8M17 14.6c1.8.6 3 2.1 3.5 4.4"/></svg><span>Find people</span></a>
+
+      <p class="nav-label">Account</p>
+      <a href="#profile" data-view-link="profile"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="10" r="3"/><path d="M6.6 18.2c1.2-2 3.1-3 5.4-3s4.2 1 5.4 3"/></svg><span>My profile</span><span id="profile-dot" class="count count-warn" hidden>Set up</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="who">
+        <span class="avatar" id="who-avatar" aria-hidden="true">?</span>
+        <span class="who-text"><strong id="who-name">Your profile</strong><a class="who-link" href="#profile">My profile</a></span>
+      </div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <main id="main" tabindex="-1">
+    <!-- Board -->
+    <section id="board-view" class="view" aria-labelledby="board-heading">
+      <div class="intro">
+        <div>
+          <h1 id="board-heading"><span id="open-total" class="num">–</span> open internships</h1>
+          <p class="lede">Software and tech roles in Canada and the US, from SimplifyJobs, three more community lists and <span id="board-count-text">company job boards</span>. Only listings posted in the last 30 days are shown.</p>
+          <div class="board-sync">
+            <span id="sync-status" class="sync-status"><span class="dot"></span><span class="label">Connecting…</span></span>
+            <button id="refresh-btn" class="btn btn-quiet" title="Check every source for new internships now (about 30–60 seconds)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>
+              <span>Refresh</span>
+            </button>
+            <span id="refresh-result" class="muted" role="status"></span>
+          </div>
+        </div>
+        <div class="stats" id="stats">
+          <button type="button" class="stat" data-stat="new"><span class="stat-label">New since last visit</span><span class="stat-value num" id="stat-new">–</span></button>
+          <button type="button" class="stat" data-stat="CA"><span class="stat-label">In Canada</span><span class="stat-value num" id="stat-ca">–</span></button>
+          <button type="button" class="stat" data-stat="board"><span class="stat-label">Direct from companies</span><span class="stat-value num" id="stat-board">–</span></button>
+          <button type="button" class="stat" data-stat="due"><span class="stat-label">Deadlines this week</span><span class="stat-value num" id="stat-due">–</span></button>
+        </div>
+      </div>
+
+      <form id="filters" class="filters" autocomplete="off" role="search">
+        <label class="search">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+          <input type="search" name="q" placeholder="Search title, company or city" aria-label="Search listings">
+          <kbd>/</kbd>
+        </label>
+        <div class="segmented" role="radiogroup" aria-label="Region">
+          <label><input type="radio" name="region" value="" checked><span>All</span></label>
+          <label><input type="radio" name="region" value="US"><span>US <em data-count="US"></em></span></label>
+          <label><input type="radio" name="region" value="CA"><span>Canada <em data-count="CA"></em></span></label>
+          <label><input type="radio" name="region" value="REMOTE"><span>Remote <em data-count="REMOTE"></em></span></label>
+        </div>
+        <div class="filter-row">
+          <select name="category" aria-label="Category"><option value="">All categories</option></select>
+          <select name="term" aria-label="Term"><option value="">Any term</option></select>
+          <select name="degree" aria-label="Degree"><option value="">Any degree</option></select>
+          <select name="source" aria-label="Source">
+            <option value="">All sources</option>
+            <option value="simplify">SimplifyJobs list</option>
+            <option value="board">Company boards</option>
+            <option value="negarprh">Canadian Tech Internships</option>
+            <option value="michelleokolie">Canada Tech Internships</option>
+            <option value="zapply">Zapply</option>
+          </select>
+          <select name="sort" aria-label="Sort">
+            <option value="posted">Newest posted</option>
+            <option value="added">Recently added here</option>
+            <option value="company">Company A–Z</option>
+            <option value="match">Best match</option>
+          </select>
+          <label class="toggle"><input type="checkbox" name="new_only"><span>New only</span></label>
+          <label class="toggle"><input type="checkbox" name="hide_tracked"><span>Hide tracked</span></label>
+          <button type="button" id="clear-filters" class="link" hidden>Clear filters</button>
+        </div>
+      </form>
+
+      <p id="result-count" class="result-count" aria-live="polite"></p>
+      <div id="listings" class="listings"></div>
+      <div id="sentinel" aria-hidden="true"></div>
+      <button id="more-btn" class="btn btn-quiet wide" hidden>Show more</button>
+      <div id="empty" class="empty" hidden>
+        <p class="empty-title">No listings match these filters.</p>
+        <p>Try a broader search, or <button type="button" class="link" data-action="clear">clear the filters</button>.</p>
+      </div>
+    </section>
+
+    <!-- Tracker -->
+    <section id="tracker-view" class="view" aria-labelledby="tracker-heading" hidden>
+      <div class="intro intro-compact">
+        <div>
+          <h1 id="tracker-heading">Applications</h1>
+          <p class="lede">Drag cards between stages. Click one to add a deadline or notes.</p>
+        </div>
+      </div>
+      <div id="tracker-empty" class="empty empty-panel" hidden>
+        <p class="empty-title">Nothing tracked yet</p>
+        <p>Press <strong>Track</strong> on a listing to save it here. Move it along as you apply, interview and hear back.</p>
+        <a class="btn btn-primary" href="#board" data-view-link="board">Browse listings</a>
+      </div>
+      <div id="kanban" class="kanban"></div>
+    </section>
+
+    <!-- Companies -->
+    <section id="companies-view" class="view" aria-labelledby="companies-heading" hidden>
+      <div class="intro intro-compact">
+        <div>
+          <h1 id="companies-heading">Company watchlist</h1>
+          <p class="lede">These Greenhouse, Lever and Ashby job boards are read directly. Boards with internships are checked hourly, the rest every 6 hours.</p>
+        </div>
+      </div>
+
+      <form id="add-company" class="add-company" autocomplete="off" novalidate>
+        <label class="field grow">
+          <span>Job board link</span>
+          <input name="url" type="text" required placeholder="jobs.lever.co/company or job-boards.greenhouse.io/company">
+        </label>
+        <label class="field">
+          <span>Name <em>(optional)</em></span>
+          <input name="name" type="text" placeholder="Company name">
+        </label>
+        <button class="btn btn-primary" type="submit">Add company</button>
+        <p id="add-company-msg" class="form-msg" role="status"></p>
+      </form>
+
+      <div class="companies-tools">
+        <label class="search small">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+          <input id="company-search" type="search" placeholder="Filter companies" aria-label="Filter companies">
+        </label>
+        <div class="segmented" role="radiogroup" aria-label="Show">
+          <label><input type="radio" name="company-show" value="hiring" checked><span>With internships</span></label>
+          <label><input type="radio" name="company-show" value="all"><span>All</span></label>
+          <label><input type="radio" name="company-show" value="off"><span>Turned off</span></label>
+        </div>
+        <span id="company-summary" class="muted"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="companies">
+          <thead>
+            <tr><th scope="col">Company</th><th scope="col">Board</th><th scope="col" class="r">Internships</th><th scope="col" class="r">All jobs</th><th scope="col">Last checked</th><th scope="col" class="r">Watching</th></tr>
+          </thead>
+          <tbody id="company-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tool pages: Resume tailor, Cover letter, Find people -->
+    <section id="tool-view" class="view" aria-labelledby="tool-heading" hidden>
+      <div class="intro intro-compact">
+        <div>
+          <h1 id="tool-heading"></h1>
+          <p class="lede" id="tool-lede"></p>
+        </div>
+      </div>
+      <div class="tool-picker panel">
+        <label class="field"><span>Internship</span>
+          <select id="tool-listing"></select></label>
+        <p class="muted tool-hint" id="tool-hint"></p>
+      </div>
+      <div id="tool-empty" class="empty empty-panel" hidden>
+        <p class="empty-title">Track an internship first</p>
+        <p>These tools work on internships in your tracker. Press <strong>Track</strong> on any listing, then come back.</p>
+        <a class="btn btn-primary" href="#board" data-view-link="board">Browse internships</a>
+      </div>
+      <div id="tool-body" class="panel tool-body"></div>
+    </section>
+
+    <!-- Find People (rendered by features/people.js) -->
+    <section id="people-view" class="view" aria-label="Find people" hidden></section>
+
+    <!-- Profile -->
+    <section id="profile-view" class="view" aria-labelledby="profile-heading" hidden>
+      <div class="intro intro-compact">
+        <div>
+          <h1 id="profile-heading">Your profile</h1>
+          <p class="lede">Claude writes from this profile. It never adds anything that isn't in your resume. Ranking, tailored resumes and cover letters all use it.</p>
+        </div>
+      </div>
+
+      <div class="profile-grid">
+        <div class="panel">
+          <h2 class="panel-title">Resume</h2>
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="resume-file" accept=".pdf,.docx,.txt,.md">
+            <svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
+            <span class="dz-main">Drop your resume here or <u>choose a file</u></span>
+            <span class="dz-sub">PDF, Word (.docx) or text, up to 5 MB</span>
+          </label>
+          <p id="resume-status" class="form-msg" role="status"></p>
+          <div id="profile-summary" class="profile-summary" hidden></div>
+          <details class="raw-edit" id="raw-edit" hidden>
+            <summary>Fix extraction mistakes (edit profile JSON)</summary>
+            <textarea id="profile-json" rows="16" spellcheck="false"></textarea>
+            <div class="row-end"><button type="button" class="btn btn-quiet" id="save-json">Save profile</button></div>
+          </details>
+        </div>
+
+        <form class="panel" id="prefs-form" autocomplete="off">
+          <h2 class="panel-title">What you're looking for</h2>
+          <label class="field"><span>Roles you want <em>(comma-separated)</em></span>
+            <input name="target_roles" placeholder="backend, ML infrastructure, mobile"></label>
+          <fieldset class="field"><legend>Categories</legend><div class="chips" id="pref-categories"></div></fieldset>
+          <fieldset class="field"><legend>Where</legend><div class="chips" id="pref-regions"></div></fieldset>
+          <fieldset class="field"><legend>Terms</legend><div class="chips" id="pref-terms"></div></fieldset>
+          <div class="field-pair">
+            <label class="field"><span>Degree level</span>
+              <select name="degree_level"><option value="">Any</option><option>Associate's</option><option>Bachelor's</option><option>Master's</option><option>PhD</option></select></label>
+            <label class="field"><span>Graduation</span><input name="graduation" placeholder="May 2028"></label>
+          </div>
+          <label class="field"><span>Work authorization</span>
+            <input name="work_authorization" placeholder="Canadian citizen; needs sponsorship for the US"></label>
+          <label class="field"><span>School <em>(for alumni searches)</em></span><input name="school"></label>
+          <label class="check-row"><input type="checkbox" name="linkedin_premium">
+            <span>I have LinkedIn Premium <em class="muted">(connection notes can be 300 characters instead of 200)</em></span></label>
+          <label class="field"><span>Anything else Claude should know</span>
+            <textarea name="notes" rows="3" placeholder="Prefer smaller companies; strongest in Python and Go…"></textarea></label>
+          <div class="row-end"><span id="prefs-msg" class="form-msg" role="status"></span><button class="btn btn-primary">Save preferences</button></div>
+        </form>
+      </div>
+      <div id="profile-extras"></div>
+    </section>
+  </main>
+
+  <dialog id="drawer" class="drawer" aria-labelledby="drawer-title">
+    <form method="dialog" id="card-form">
+      <header class="drawer-head">
+        <div>
+          <p id="drawer-company" class="eyebrow"></p>
+          <h2 id="drawer-title"></h2>
+          <p id="drawer-sub" class="muted"></p>
+        </div>
+        <button value="cancel" class="icon-btn" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <fieldset class="field">
+        <legend>Stage</legend>
+        <div class="stage-picker" id="stage-picker"></div>
+      </fieldset>
+      <label class="field"><span>Deadline</span><input type="date" name="deadline"></label>
+      <label class="field"><span>Notes</span><textarea name="notes" rows="5" placeholder="Referral, recruiter name, OA date…"></textarea></label>
+      <div id="drawer-extras" class="drawer-extras"></div>
+      <footer class="drawer-foot">
+        <button type="button" id="drawer-remove" class="btn btn-danger-quiet">Remove</button>
+        <span class="spacer"></span>
+        <a id="drawer-link" target="_blank" rel="noopener" class="btn btn-quiet">Open posting ↗</a>
+        <button value="save" class="btn btn-primary">Save</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="alert" hidden></div>
+
+  <script src="select.js"></script>
+  <script src="app.js"></script>
+  <script src="features/ranking.js"></script>
+  <script src="features/documents.js"></script>
+  <script src="features/people.js"></script>
+</body>
+</html>
