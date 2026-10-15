@@ -1,0 +1,98 @@
+[
+  {
+    "id": "simplify:acme-swe-27", "source": "simplify", "company": "Acme Robotics",
+    "title": "Software Engineer Intern - Summer 2027", "url": "https://jobs.example.com/acme/swe-27",
+    "locations": "Toronto, ON / Waterloo, ON / Montreal, QC", "regions": ["CA"], "category": "Software",
+    "terms": ["Summer 2027"], "degrees": ["Bachelor's"], "sponsorship": "Other",
+    "date_posted": 1791993600, "first_seen": 1791993600, "active": 1, "posting_key": "url:jobs.example.com/acme/swe-27", "board": null,
+    "tracked_status": "saved", "match_score": 82, "match_reason": "Python and robotics projects match the team's stack.", "match_method": "claude"
+  },
+  {
+    "id": "board:greenhouse:northwind:4401", "source": "board", "company": "Northwind Data",
+    "title": "Data Engineering Intern", "url": "https://boards.example.com/northwind/4401",
+    "locations": "New York, NY", "regions": ["US"], "category": "AI/ML/Data",
+    "terms": ["Summer 2027"], "degrees": ["Bachelor's", "Master's"], "sponsorship": null,
+    "date_posted": 1791928800, "first_seen": 1791997200, "active": 1, "posting_key": "gh:4401", "board": "greenhouse:northwind",
+    "tracked_status": null, "match_score": 58, "match_reason": "Mentions Python and SQL from your skills.", "match_method": "quick"
+  },
+  {
+    "id": "zapply:lumen-backend", "source": "zapply", "company": "Lumen Health",
+    "title": "Backend Developer Intern", "url": "https://careers.example.org/lumen/backend",
+    "locations": "Austin, TX", "regions": ["US"], "category": "Software",
+    "terms": ["Summer 2027"], "degrees": ["Bachelor's"], "sponsorship": "Offers Sponsorship",
+    "date_posted": 1791928800, "first_seen": 1791928800, "active": 1, "posting_key": "url:careers.example.org/lumen/backend", "board": null,
+    "tracked_status": null, "match_score": 31, "match_reason": "Backend role, but few matching skills in the title.", "match_method": "quick"
+  },
+  {
+    "id": "negarprh:maple-firmware", "source": "negarprh", "company": "Maple Systems",
+    "title": "Firmware Intern", "url": "https://jobs.example.com/maple/firmware",
+    "locations": "Ottawa, ON", "regions": ["CA"], "category": "Hardware",
+    "terms": ["Fall 2026"], "degrees": ["Bachelor's"], "sponsorship": null,
+    "date_posted": 1791741600, "first_seen": 1791741600, "active": 1, "posting_key": "url:jobs.example.com/maple/firmware", "board": null,
+    "tracked_status": "saved", "match_score": null, "match_reason": null, "match_method": null
+  },
+  {
+    "id": "michelleokolie:polar-pm", "source": "michelleokolie", "company": "Polar Labs",
+    "title": "Product Management Intern", "url": "https://jobs.example.com/polar/pm",
+    "locations": "Vancouver, BC", "regions": ["CA"], "category": "Product",
+    "terms": ["Winter 2027"], "degrees": ["Bachelor's"], "sponsorship": null,
+    "date_posted": 1791741600, "first_seen": 1791741600, "active": 1, "posting_key": "url:jobs.example.com/polar/pm", "board": null,
+    "tracked_status": null, "match_score": 47, "match_reason": "Product role; some overlap with your project work.", "match_method": "quick"
+  },
+  {
+    "id": "simplify:quill-quant", "source": "simplify", "company": "Quillfeather Capital",
+    "title": "Quant Research Intern", "url": "https://jobs.example.com/quill/quant",
+    "locations": "Chicago, IL / New York, NY", "regions": ["US"], "category": "Quant",
+    "terms": ["Summer 2027"], "degrees": ["PhD"], "sponsorship": "U.S. Citizenship is Required",
+    "date_posted": 1791568800, "first_seen": 1791568800, "active": 1, "posting_key": "url:jobs.example.com/quill/quant", "board": null,
+    "tracked_status": null, "match_score": 12, "match_reason": "Asks for a PhD.", "match_method": "quick"
+  },
+  {
+    "id": "simplify:birch-mobile", "source": "simplify", "company": "Birch & Co",
+    "title": "Mobile Engineer Intern", "url": "https://jobs.example.com/birch/mobile",
+    "locations": "Remote in USA", "regions": ["US", "REMOTE"], "category": "Software",
+    "terms": ["Summer 2027"], "degrees": ["Bachelor's"], "sponsorship": "Other",
+    "date_posted": 1790964000, "first_seen": 1790964000, "active": 1, "posting_key": "url:jobs.example.com/birch/mobile", "board": null,
+    "tracked_status": null, "match_score": null, "match_reason": null, "match_method": null
+  },
+  {
+    "id": "simplify:orbit-ml", "source": "simplify", "company": "Orbit Analytics",
+    "title": "Machine Learning Intern", "url": "https://jobs.example.com/orbit/ml",
+    "locations": "Seattle, WA / San Francisco, CA / Remote in USA", "regions": ["US", "REMOTE"], "category": "AI/ML/Data",
+    "terms": ["Summer 2027", "Fall 2026"], "degrees": ["Master's"], "sponsorship": "Other",
+    "date_posted": 1790964000, "first_seen": 1790964000, "active": 1, "posting_key": "url:jobs.example.com/orbit/ml", "board": null,
+    "tracked_status": "applied", "match_score": 74, "match_reason": "Your ML coursework and FastAPI work fit this team.", "match_method": "claude"
+  },
+  {
+    "id": "board:lever:lumen:77", "source": "board", "company": "Lumen Health",
+    "title": "Infrastructure Intern", "url": "https://boards.example.com/lumen/77",
+    "locations": "Toronto, ON", "regions": ["CA"], "category": "Software",
+    "terms": ["Winter 2027"], "degrees": ["Bachelor's"], "sponsorship": null,
+    "date_posted": 1790272800, "first_seen": 1790272800, "active": 1, "posting_key": "lever:77", "board": "lever:lumen",
+    "tracked_status": null, "match_score": 66, "match_reason": "Docker and Go appear in your skills.", "match_method": "quick"
+  },
+  {
+    "id": "simplify:juniper-sec", "source": "simplify", "company": "Juniper Shield",
+    "title": "Security Engineering Intern", "url": "https://jobs.example.com/juniper/security",
+    "locations": "Remote in Canada", "regions": ["CA", "REMOTE"], "category": "Software",
+    "terms": ["Summer 2027"], "degrees": ["Bachelor's"], "sponsorship": "Other",
+    "date_posted": 1790272800, "first_seen": 1790272800, "active": 1, "posting_key": "url:jobs.example.com/juniper/security", "board": null,
+    "tracked_status": "interviewing", "match_score": 50, "match_reason": "Some security coursework.", "match_method": "quick"
+  },
+  {
+    "id": "board:greenhouse:northwind:4402", "source": "board", "company": "Northwind Data",
+    "title": "Analytics Intern", "url": "https://boards.example.com/northwind/4402",
+    "locations": "Boston, MA", "regions": ["US"], "category": "AI/ML/Data",
+    "terms": ["Summer 2027"], "degrees": ["Bachelor's"], "sponsorship": null,
+    "date_posted": null, "first_seen": 1790272800, "active": 1, "posting_key": "gh:4402", "board": "greenhouse:northwind",
+    "tracked_status": null, "match_score": null, "match_reason": null, "match_method": null
+  },
+  {
+    "id": "simplify:kestrel-qa", "source": "simplify", "company": "Kestrel Games",
+    "title": "QA Automation Intern", "url": "https://jobs.example.com/kestrel/qa",
+    "locations": "Montreal, QC", "regions": ["CA"], "category": "Software",
+    "terms": ["Fall 2026"], "degrees": ["Bachelor's"], "sponsorship": null,
+    "date_posted": 1788112800, "first_seen": 1788112800, "active": 0, "posting_key": "url:jobs.example.com/kestrel/qa", "board": null,
+    "tracked_status": "rejected", "match_score": null, "match_reason": null, "match_method": null
+  }
+]

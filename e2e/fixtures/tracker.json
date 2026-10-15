@@ -1,0 +1,40 @@
+{
+  "statuses": ["saved", "applied", "interviewing", "offer", "rejected"],
+  "items": [
+    {
+      "listing_id": "simplify:acme-swe-27", "status": "saved", "notes": "", "deadline": "2026-10-16", "position": 1, "updated_at": 1791914400,
+      "company": "Acme Robotics", "title": "Software Engineer Intern - Summer 2027", "url": "https://jobs.example.com/acme/swe-27",
+      "locations": "Toronto, ON / Waterloo, ON / Montreal, QC", "active": 1, "date_posted": 1791993600, "terms": ["Summer 2027"],
+      "regions": ["CA"], "degrees": ["Bachelor's"], "category": "Software", "sponsorship": "Other", "first_seen": 1791993600,
+      "id": "simplify:acme-swe-27"
+    },
+    {
+      "listing_id": "negarprh:maple-firmware", "status": "saved", "notes": "Referral from a classmate", "deadline": null, "position": 2, "updated_at": 1791828000,
+      "company": "Maple Systems", "title": "Firmware Intern", "url": "https://jobs.example.com/maple/firmware",
+      "locations": "Ottawa, ON", "active": 1, "date_posted": 1791741600, "terms": ["Fall 2026"],
+      "regions": ["CA"], "degrees": ["Bachelor's"], "category": "Hardware", "sponsorship": null, "first_seen": 1791741600,
+      "id": "negarprh:maple-firmware"
+    },
+    {
+      "listing_id": "simplify:orbit-ml", "status": "applied", "notes": "", "deadline": "2026-10-14", "position": 1, "updated_at": 1791741600,
+      "company": "Orbit Analytics", "title": "Machine Learning Intern", "url": "https://jobs.example.com/orbit/ml",
+      "locations": "Seattle, WA / San Francisco, CA / Remote in USA", "active": 1, "date_posted": 1790964000, "terms": ["Summer 2027", "Fall 2026"],
+      "regions": ["US", "REMOTE"], "degrees": ["Master's"], "category": "AI/ML/Data", "sponsorship": "Other", "first_seen": 1790964000,
+      "id": "simplify:orbit-ml"
+    },
+    {
+      "listing_id": "simplify:juniper-sec", "status": "interviewing", "notes": "Online assessment on Oct 20", "deadline": "2026-10-10", "position": 1, "updated_at": 1791568800,
+      "company": "Juniper Shield", "title": "Security Engineering Intern", "url": "https://jobs.example.com/juniper/security",
+      "locations": "Remote in Canada", "active": 1, "date_posted": 1790272800, "terms": ["Summer 2027"],
+      "regions": ["CA", "REMOTE"], "degrees": ["Bachelor's"], "category": "Software", "sponsorship": "Other", "first_seen": 1790272800,
+      "id": "simplify:juniper-sec"
+    },
+    {
+      "listing_id": "simplify:kestrel-qa", "status": "rejected", "notes": "", "deadline": "2026-10-30", "position": 1, "updated_at": 1790272800,
+      "company": "Kestrel Games", "title": "QA Automation Intern", "url": "https://jobs.example.com/kestrel/qa",
+      "locations": "Montreal, QC", "active": 0, "date_posted": 1788112800, "terms": ["Fall 2026"],
+      "regions": ["CA"], "degrees": ["Bachelor's"], "category": "Software", "sponsorship": null, "first_seen": 1788112800,
+      "id": "simplify:kestrel-qa"
+    }
+  ]
+}

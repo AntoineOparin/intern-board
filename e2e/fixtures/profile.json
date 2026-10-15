@@ -1,0 +1,46 @@
+{
+  "resume_filename": "sam-rivera-resume.pdf",
+  "data": {
+    "name": "Sam Rivera",
+    "email": "sam.rivera@example.com",
+    "phone": "555-0142",
+    "location": "Toronto, ON",
+    "links": [{ "label": "GitHub", "url": "github.com/sam-rivera-example" }],
+    "education": [
+      {
+        "school": "University of Northfield", "degree": "BASc", "field": "Computer Engineering", "location": "Northfield, ON",
+        "start": "Sep 2023", "end": "May 2028", "gpa": "3.8", "details": []
+      }
+    ],
+    "experience": [
+      {
+        "organization": "Harbourview Labs", "role": "Software Developer Intern", "location": "Toronto, ON",
+        "start": "May 2025", "end": "Aug 2025",
+        "bullets": ["Built a Python service that cut report generation from 40 minutes to 6 minutes."]
+      }
+    ],
+    "projects": [
+      { "name": "Trailmap", "tech": ["TypeScript", "Go"], "link": "", "date": "2024", "bullets": ["Built a route planner used by 30 club members."] }
+    ],
+    "skills": { "languages": ["Python", "Go", "TypeScript"], "frameworks": ["FastAPI", "React"], "tools": ["Git", "Docker"], "other": [] },
+    "awards": ["Dean's list 2024"],
+    "summary": "Computer engineering student who has built backend services and developer tools."
+  },
+  "preferences": {
+    "target_roles": ["backend", "developer tools"],
+    "categories": ["Software"],
+    "regions": ["CA", "US"],
+    "terms": ["Summer 2027"],
+    "degree_level": "Bachelor's",
+    "graduation": "May 2028",
+    "work_authorization": "Canadian citizen; needs sponsorship for the US",
+    "school": "University of Northfield",
+    "notes": "",
+    "linkedin_premium": false
+  },
+  "version": 7,
+  "updated_at": 1791828000,
+  "has_resume": true,
+  "resume_chars": 3120,
+  "extract_job": null
+}

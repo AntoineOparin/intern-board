@@ -61,3 +61,5 @@ These run through the Claude Code CLI on your Mac (`claude -p`), using the Claud
 ```sh
 .venv/bin/python -m unittest
 ```
+
+Frontend tests need Node: `cd e2e && npm ci && npx playwright install chromium && npm test`. See `e2e/README.md`.

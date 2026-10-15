@@ -19,7 +19,7 @@ A personal, local web app: software and tech internships in Canada and the US, a
   - `select.js`: custom dropdowns layered over the native `<select>`s.
   - `doc.html`: the printable resume and cover-letter page.
 - **Tests:** stdlib `unittest` in `tests/`. Run them with `.venv/bin/python -m unittest`. Claude and Prospeo are always mocked.
-- **Frontend parity tests** (being added in the migration's step 0): Playwright in `e2e/`, with every `/api/*` call answered by made-up fixtures. They never use the real database, Claude or Prospeo.
+- **Frontend parity tests:** Playwright in `e2e/` (`cd e2e && npm test`; see `e2e/README.md`), with every `/api/*` call answered by made-up fixtures. They never use the real database, Claude or Prospeo. Known bugs are listed in `e2e/README.md`.
 
 ## Running
 - `./run.sh` serves http://localhost:8765 and refreshes listings hourly.

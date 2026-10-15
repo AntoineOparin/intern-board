@@ -1,0 +1,42 @@
+{
+  "items": [
+    {
+      "id": "draft-email-1",
+      "listing_id": "simplify:acme-swe-27",
+      "title": "Email · recruiter · Jordan Okafor",
+      "created_at": 1791914400,
+      "updated_at": 1791914400,
+      "recipient_type": "recruiter",
+      "channel": "email",
+      "recipient_name": "Jordan Okafor",
+      "recipient_title": "University Recruiter",
+      "person_id": "pr-jordan",
+      "context": "",
+      "subject": "Summer 2027 software internship question",
+      "body": "Hi Jordan,\n\nI'm a computer engineering student at the University of Northfield. Last summer at Harbourview Labs I built a Python service that cut report generation from 40 minutes to 6 minutes. Could you tell me which teams take Summer 2027 interns?\n\nThanks,\nSam",
+      "angle": "Leads with the report-generation project, which is closest to the backend work in this posting.",
+      "checks": [],
+      "chars": 262
+    },
+    {
+      "id": "draft-note-1",
+      "listing_id": "simplify:acme-swe-27",
+      "title": "LinkedIn note · recruiter · Jordan Okafor",
+      "created_at": 1791914400,
+      "updated_at": 1791914400,
+      "recipient_type": "recruiter",
+      "channel": "linkedin_note",
+      "recipient_name": "Jordan Okafor",
+      "recipient_title": "University Recruiter",
+      "person_id": "pr-jordan",
+      "context": "",
+      "subject": "",
+      "body": "Hi Jordan, I'm a computer engineering student at the University of Northfield applying to Acme's Summer 2027 software internship. I built a Python service at Harbourview Labs and would value ten minutes on how your intern team works.",
+      "angle": "A short question about how the intern team works.",
+      "checks": [
+        "Over LinkedIn's 200-character limit for free accounts."
+      ],
+      "chars": 233
+    }
+  ]
+}
