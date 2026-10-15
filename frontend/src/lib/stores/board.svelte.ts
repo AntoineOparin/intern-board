@@ -38,7 +38,9 @@ function query(offset: number) {
 }
 
 export async function loadListings(reset: boolean) {
-  const mine = ++token;
+  // A reset (new filters) starts a new generation and makes older replies stale. Loading the next
+  // page belongs to the current generation, so it never cancels a reset that is still loading.
+  const mine = reset ? ++token : token;
   const offset = reset ? 0 : board.items.length;
   if (reset) board.loading = true;
   let data;
@@ -49,6 +51,7 @@ export async function loadListings(reset: boolean) {
     return;
   }
   if (mine !== token) return; // a newer filter change won
+  if (!reset && board.loading) return; // a reset started meanwhile; its first page replaces the list
   board.items = reset ? data.items : [...board.items, ...data.items];
   if (reset) why.clear();
   board.total = data.total;
@@ -58,7 +61,9 @@ export async function loadListings(reset: boolean) {
 }
 
 export async function loadMore() {
-  if (loadingMore || board.items.length >= board.total) return;
+  // While new filters load, the list on screen is the old one (or a skeleton): its length isn't
+  // the next offset for the new results.
+  if (loadingMore || board.loading || board.items.length >= board.total) return;
   loadingMore = true;
   try { await loadListings(false); } finally { loadingMore = false; }
 }

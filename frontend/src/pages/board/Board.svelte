@@ -9,7 +9,7 @@
   import { tracker, dueThisWeek } from "../../lib/stores/tracker.svelte";
   import { ranking } from "../../lib/stores/ranking.svelte";
   import { profile, hasProfileData } from "../../lib/stores/profile.svelte";
-  import { route, navigate } from "../../lib/stores/router.svelte";
+  import { navigate } from "../../lib/stores/router.svelte";
   import { companies, loadCompanies } from "../../lib/stores/companies.svelte";
   import type { Count, Listing } from "../../lib/types";
 
@@ -99,7 +99,7 @@
   let sentinel: HTMLDivElement;
   onMount(() => {
     const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && route.view && visible && board.items.length) loadMore();
+      if (entries[0].isIntersecting && visible && !board.loading && board.items.length) loadMore();
     }, { rootMargin: "600px" });
     observer.observe(sentinel);
     return () => observer.disconnect();

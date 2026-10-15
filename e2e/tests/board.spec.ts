@@ -105,6 +105,23 @@ test.describe("listings", () => {
     expect(api.listingQueries().map(q => q.offset)).toEqual(["0", "50", "100"]);
   });
 
+  test("changing filters never loads a stray next page or gets stuck loading", async ({ app, api, page }) => {
+    // Enough listings that the infinite-scroll sentinel matters; every third one is in Canada.
+    api.listings = filler(150).map((l, i) => ({ ...l, regions: i % 3 ? ["US"] : ["CA"] }));
+    await app.open();
+    await expect(page.locator("#listings .listing")).toHaveCount(50);
+    const regions = page.locator("#filters .segmented label");
+    for (const [label, count] of [["US", "100 internships"], ["Canada", "50 internships"], ["All", "150 internships"], ["US", "100 internships"], ["All", "150 internships"]]) {
+      const before = api.listingQueries().length;
+      await regions.filter({ hasText: label }).first().click();
+      await expect(page.locator("#result-count")).toHaveText(count);
+      await expect(page.locator("#listings .skeleton")).toHaveCount(0);
+      await expect(page.locator("#listings .listing")).toHaveCount(50);
+      // Only the first page of the new filter was asked for.
+      expect(api.listingQueries().slice(before).map(q => q.offset)).toEqual(["0"]);
+    }
+  });
+
   test("scrolling near the end loads more automatically", async ({ app, api, page }) => {
     api.listings = filler(80);
     await app.open();
