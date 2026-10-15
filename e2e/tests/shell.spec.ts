@@ -1,7 +1,6 @@
 import { test, expect, fixture } from "../support/test";
 
-// Tests tagged @shell need only the app shell (sidebar, routing, menu, skip link). Step 1 of the
-// migration is done when they pass against the new frontend: FRONTEND=new npx playwright test --grep @shell
+// Tests tagged @shell need only the app shell (sidebar, routing, menu, skip link): --grep @shell
 
 test.describe("sidebar and routing", () => {
   test("loads the board by default, with counts and your name in the sidebar @shell", async ({ app, page }) => {

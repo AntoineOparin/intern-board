@@ -1,8 +1,8 @@
-# Frontend parity tests
+# Frontend browser tests
 
-Playwright tests that record how the frontend behaves, so the Svelte rewrite (see `docs/svelte-migration.md`) can be checked against the current app one page at a time.
+Playwright tests for the whole frontend. They were written against the old plain-JavaScript app as parity tests for the Svelte migration (see `docs/svelte-migration.md`), and now guard the Svelte app.
 
-They never start uvicorn, never touch `data/board.db`, and never reach Claude or Prospeo. The frontend is served as static files, and a stateful mock in `support/mock-api.ts` answers every `/api/*` request from made-up fixtures.
+They never start uvicorn, never touch `data/board.db`, and never reach Claude or Prospeo. The built frontend is served as static files, and a stateful mock in `support/mock-api.ts` answers every `/api/*` request from made-up fixtures.
 
 ## Run
 
@@ -13,12 +13,11 @@ npx playwright install chromium   # once
 npm test                          # about 25 seconds
 ```
 
-- **Against the current frontend (the default):** Playwright serves `board/static` with `python3 -m http.server` on port 8781.
-- **Against the Svelte build:** `npm run test:new` (or `FRONTEND=new npx playwright test`). The same static server serves `board/static/app/` at `/app/`. Until every page has moved, run only the migrated pages' tests, for example `--grep @shell` after step 1.
-- **Against another build:** set `APP_URL`, e.g. `APP_URL=http://127.0.0.1:8766/next/ npm test`. No server is started; serve the build yourself. Every test opens pages relative to `APP_URL`, and `/api/*` is mocked on that origin.
+- **Default:** Playwright serves the build in `board/static` with `python3 -m http.server` on port 8781. Run `npm run build` in `frontend/` first, so you test your latest change.
+- **Against another server:** set `APP_URL`, e.g. `APP_URL=http://127.0.0.1:5173/ npm test` for `npm run dev`. No server is started; serve the build yourself. Every test opens pages relative to `APP_URL`, and `/api/*` is mocked on that origin.
 - **One file or test:** `npx playwright test tests/people.spec.ts`, or add `-g "Rewrite"`.
 - **Debugging:** `npm run test:headed`. For a failure, open the trace with `npx playwright show-trace test-results/<test>/trace.zip`.
-- **Screenshots (optional):** `VISUAL=1 SHOTS=old npx playwright test tests/visual.spec.ts` saves every page at 1440 px and 400 px wide to `screenshots/old/`. Take a `new` set against the new build and compare them by eye. They are git-ignored.
+- **Screenshots (optional):** `VISUAL=1 SHOTS=old npx playwright test tests/visual.spec.ts` saves every page at 1440 px and 400 px wide to `screenshots/old/`. Take another set after a change (`SHOTS=new`) and compare them by eye. They are git-ignored.
 
 ## How the tests work
 
@@ -65,5 +64,5 @@ Step 0 found these bugs in the old frontend. They were fixed before step 1, so t
 - **Re-check label:** a failed Re-check keeps the button's full label.
 - **Find People links:** a `#people?listing=…` link works with an empty tracker.
 - **Tracker panel:** a failed Save keeps the panel open with your edits.
-- **Document links:** the links to `doc.html` and its Back button are relative, so they work under `/next/`.
+- **Document links:** the links to `doc.html` and its Back button are relative, so they work wherever the app is served.
 - **Uncaught errors:** failed requests that were already shown in a toast no longer surface as uncaught errors.

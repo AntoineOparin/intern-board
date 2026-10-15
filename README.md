@@ -64,18 +64,16 @@ These run through the Claude Code CLI on your Mac (`claude -p`), using the Claud
 
 ## Frontend development
 
-The frontend is moving to Svelte and TypeScript in `frontend/` (see `docs/svelte-migration.md`). During the move, the new app is served at http://localhost:8765/next/ and the old one stays at `/`.
-
-The built files in `board/static/app/` are committed, so `./run.sh` only needs Python. After changing anything in `frontend/`, rebuild and commit the result:
+The frontend is Svelte and TypeScript, in `frontend/`. It builds into `board/static/`, which the app serves. The built files are committed, so `./run.sh` only needs Python. After changing anything in `frontend/`, rebuild and commit the result:
 
 ```sh
 cd frontend
 npm ci
 npm run check   # svelte-check
 npm test        # Vitest
-npm run build   # writes board/static/app/
+npm run build   # writes board/static/
 ```
 
 For live reloading, run a test server with `INTERN_BOARD_NO_REFRESH=1 .venv/bin/uvicorn board.main:app --port 8766`, then `npm run dev` in `frontend/`. Vite forwards `/api` to it.
 
-Frontend tests need Node: `cd e2e && npm ci && npx playwright install chromium && npm test`. See `e2e/README.md`.
+Browser tests need Node: `cd e2e && npm ci && npx playwright install chromium && npm test`. They run against the built files in `board/static/`, so build first. See `e2e/README.md`.

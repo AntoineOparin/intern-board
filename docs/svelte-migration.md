@@ -117,6 +117,7 @@ The Python tests only cover the backend, so "same as before" needs its own proof
    - Delete the old `board/static/*.js`, `features/` and `select.js`.
    - Update the README and CLAUDE.md.
    - Run the full suite and browser QA (desktop, and a 400 px narrow width).
+   - **Status:** done. The build goes to `board/static/` and is served at `/` (`/next` redirects there). The old JavaScript and `select.js` are deleted, the stylesheets moved to `frontend/src/styles/`, and the parity suite targets the new app by default.
 
 **For steps 3 to 6,** a page counts as done when its parity tests pass against `/next/`. If behaviour has to change on purpose, update the test in the same commit and say why in the commit message.
 

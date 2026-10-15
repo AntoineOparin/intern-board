@@ -13,17 +13,15 @@ A personal, local web app: software and tech internships in Canada and the US, a
   - `profile.py`: resume upload and extraction, and preferences.
   - `postings.py`: full job descriptions (job-board APIs, or Claude WebFetch).
   - Features: `ranking.py`, `documents.py` (tailored resume, cover letter), `people.py` (search links, outreach job), `outreach.py` (writing chain: brief → write → check → repair), `contacts.py` (Find People via Prospeo), `prospeo.py` (API client), `settings.py` (`.env`).
-- **Frontend:** plain HTML, CSS and JavaScript in `board/static/`, with no build step. **It is being migrated to Svelte and TypeScript; see `docs/svelte-migration.md`.**
-  - `app.js`: the core views, plus `window.IB`, the extension API features plug into: `hooks.listingMeta`, `listingActions`, `drawer`, `profile`, `listingsLoaded`, `pages`, and `runJob()`.
-  - `features/*.js|css`: ranking, documents, people (Find People page).
-  - `select.js`: custom dropdowns layered over the native `<select>`s.
-  - `doc.html`: the printable resume and cover-letter page.
-- **New frontend:** Svelte 5 + TypeScript + Vite in `frontend/`, built into `board/static/app/` (committed) and served at `/next/` during the migration.
-  - `src/lib/api.ts`: typed client for every endpoint, plus `runJob()`. `src/lib/types.ts`: response shapes.
-  - `src/lib/stores/`: shared state (router, meta, tracker, profile, credits, toast). `src/pages/`: one component per page.
-  - After a change, run `npm run check`, `npm test` and `npm run build` in `frontend/`, and commit the build.
+- **Frontend:** Svelte 5 + TypeScript + Vite in `frontend/`. It builds into `board/static/`, which FastAPI serves at `/`. The build is committed so `./run.sh` needs only Python. **Never edit `board/static/` by hand**; it's overwritten by every build.
+  - `src/lib/api.ts`: typed client for every endpoint, plus `runJob()` (polling, 10-minute limit). `src/lib/types.ts`: response shapes.
+  - `src/lib/stores/`: shared state (router, filters, board, meta, tracker, profile, ranking, companies, credits, people, documents, drawer, toast). State that must survive leaving a page, such as running AI jobs or polling loops, lives here, not in components.
+  - `src/lib/components/`: `Select` (accessible custom dropdown), `Drawer` (tracker side panel), `Sidebar`, `Toast`, `Icon`.
+  - `src/pages/`: board, tracker, companies, documents (tool pages and the Documents section), people (Find People), profile, doc (`doc.html`, a second Vite entry).
+  - `src/styles/`: `style.css` (tokens at the top) and per-feature styles.
+  - After a change, run `npm run check`, `npm test` and `npm run build` in `frontend/`, and commit the build with the source.
 - **Tests:** stdlib `unittest` in `tests/`. Run them with `.venv/bin/python -m unittest`. Claude and Prospeo are always mocked.
-- **Frontend parity tests:** Playwright in `e2e/` (`cd e2e && npm test`, or `npm run test:new` for the Svelte build; see `e2e/README.md`), with every `/api/*` call answered by made-up fixtures. They never use the real database, Claude or Prospeo. Known bugs are listed in `e2e/README.md`.
+- **Frontend tests:** Vitest component tests in `frontend/src/**/*.test.ts`. Playwright tests in `e2e/` (`cd e2e && npm test`; see `e2e/README.md`) run against the build, with every `/api/*` call answered by made-up fixtures. Neither ever uses the real database, Claude or Prospeo.
 
 ## Running
 - `./run.sh` serves http://localhost:8765 and refreshes listings hourly.
@@ -40,7 +38,7 @@ A personal, local web app: software and tech internships in Canada and the US, a
 - **AI output must stay honest.** Prompts include `ai.HONESTY_RULES`, and facts come from the profile. Keep the existing checks: invented numbers, claims to have applied when the user hasn't, banned phrases, and LinkedIn's note limit (200 characters free, 300 Premium).
 - **Copy style:** plain, specific language; sentence case; no exclamation marks; no hype words.
 - **UI:**
-  - Light theme only. Use the CSS tokens at the top of `style.css`, never hard-coded colours.
+  - Light theme only. Use the CSS tokens at the top of `frontend/src/styles/style.css`, never hard-coded colours.
   - The left sidebar is modelled on InternDock.
   - Keyboard access and visible focus are required.
 - **Browser storage keys** in use: `filters`, `view`, `baseline`, `lastActive`, `toolListing` (`lastVisit` is legacy). Keep them compatible so users don't lose their settings.

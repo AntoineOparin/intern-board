@@ -53,8 +53,7 @@ test.describe("kanban", () => {
     await expect(app.column("offer").locator(".card")).toHaveCount(0);
   });
 
-  test("cards move with Alt and the arrow keys (new frontend)", async ({ app, api, page }) => {
-    test.skip(process.env.FRONTEND !== "new", "The old tracker has no keyboard moves; the plan adds them in step 4.");
+  test("cards move with Alt and the arrow keys", async ({ app, api, page }) => {
     await app.open("#tracker");
     await app.card("Acme Robotics").focus();
     await page.keyboard.press("Alt+ArrowRight");

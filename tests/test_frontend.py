@@ -1,4 +1,4 @@
-"""The Svelte build is served at /next/ next to the old frontend at / (docs/svelte-migration.md)."""
+"""The frontend (built from frontend/ into board/static/) is served at /, and /next/ links from the migration still work."""
 
 import asyncio
 import unittest
@@ -31,22 +31,24 @@ def get(path: str) -> tuple[int, dict[str, str], str]:
     return start["status"], headers, body.decode(errors="replace")
 
 
-class NextAppTest(unittest.TestCase):
-    def test_new_frontend_is_served_at_next(self):
-        status, headers, body = get("/next/")
+class FrontendTest(unittest.TestCase):
+    def test_app_is_served_at_root(self):
+        status, headers, body = get("/")
         self.assertEqual(status, 200)
         self.assertIn('<div id="app">', body)
+        self.assertNotIn("app.js", body)  # the old frontend is gone
         self.assertEqual(headers["cache-control"], "no-cache")
 
-    def test_next_without_slash_redirects(self):
-        status, headers, _ = get("/next")
-        self.assertEqual(status, 307)
-        self.assertEqual(headers["location"], "/next/")
-
-    def test_old_frontend_still_at_root(self):
-        status, _, body = get("/")
+    def test_document_page_is_served(self):
+        status, _, body = get("/doc.html")
         self.assertEqual(status, 200)
-        self.assertIn('<script src="app.js"></script>', body)
+        self.assertIn('<body class="doc-page">', body)
+
+    def test_old_next_links_redirect_to_root(self):
+        for path in ("/next", "/next/"):
+            status, headers, _ = get(path)
+            self.assertEqual(status, 307)
+            self.assertEqual(headers["location"], "/")
 
 
 if __name__ == "__main__":

@@ -303,12 +303,12 @@ def ai_status():
     return {"claude": bool(ai.claude_path()), "kinds": sorted(jobs.HANDLERS)}
 
 
-# The Svelte frontend (frontend/, built into static/app/) is served at /next/ while it replaces the
-# old one page by page; see docs/svelte-migration.md.
+# The frontend is built from frontend/ into static/ (Svelte). It was served at /next/ during the
+# migration; keep old links working.
 @app.get("/next", include_in_schema=False)
-def next_app_slash():
-    return RedirectResponse("/next/")
+@app.get("/next/", include_in_schema=False)
+def next_app_moved():
+    return RedirectResponse("/")
 
 
-app.mount("/next", StaticFiles(directory=Path(__file__).parent / "static" / "app", html=True, check_dir=False), name="next")
 app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")
