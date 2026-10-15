@@ -4,6 +4,8 @@
   import Sidebar from "./lib/components/Sidebar.svelte";
   import Toast from "./lib/components/Toast.svelte";
   import Placeholder from "./pages/Placeholder.svelte";
+  import FindPeople from "./pages/people/FindPeople.svelte";
+  import Integrations from "./pages/profile/Integrations.svelte";
   import { route, startRouter, VIEWS, type View } from "./lib/stores/router.svelte";
   import { loadMeta } from "./lib/stores/meta.svelte";
   import { loadTracker } from "./lib/stores/tracker.svelte";
@@ -73,10 +75,11 @@
     <Placeholder title={TITLES[route.view === "cover" ? "cover" : "resume"]} view={route.view === "cover" ? "cover" : "resume"} />
   </section>
   <section id="people-view" class="view" aria-label="Find people" hidden={section !== "people"}>
-    <Placeholder title={TITLES.people} view="people" />
+    <FindPeople />
   </section>
   <section id="profile-view" class="view" aria-label="Your profile" hidden={section !== "profile"}>
     <Placeholder title={TITLES.profile} view="profile" />
+    {#if section === "profile"}<div id="profile-extras"><Integrations /></div>{/if}
   </section>
 </main>
 

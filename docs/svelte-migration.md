@@ -100,6 +100,7 @@ The Python tests only cover the backend, so "same as before" needs its own proof
 
    It also includes the Integrations panel on the Profile page.
    - **Done when:** every Find People and Integrations parity test passes against `/next/`, it's been checked in the browser, and component tests cover the credits states and "no Claude call without a click".
+   - **Status:** done. Find People is `frontend/src/pages/people/` with its state in `src/lib/stores/people.svelte.ts`. The Integrations panel sits under the Profile placeholder until step 6. The tracker panel's "Find people at …" link comes with the tracker in step 4. Run `cd e2e && FRONTEND=new npx playwright test tests/people.spec.ts tests/profile.spec.ts -g "step 1|step 2|step 3|intro drafts|integrations"`.
 3. **Internship board and Best matches:**
    - filters (custom Select), date or match groups, infinite scroll;
    - the stats strip, the Refresh button and its "Updated … ago" status;
