@@ -8,6 +8,7 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -302,4 +303,12 @@ def ai_status():
     return {"claude": bool(ai.claude_path()), "kinds": sorted(jobs.HANDLERS)}
 
 
+# The Svelte frontend (frontend/, built into static/app/) is served at /next/ while it replaces the
+# old one page by page; see docs/svelte-migration.md.
+@app.get("/next", include_in_schema=False)
+def next_app_slash():
+    return RedirectResponse("/next/")
+
+
+app.mount("/next", StaticFiles(directory=Path(__file__).parent / "static" / "app", html=True, check_dir=False), name="next")
 app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")

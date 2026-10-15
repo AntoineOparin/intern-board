@@ -29,6 +29,9 @@ export const detail = (status: number, text: string): Reply => ({ status, json: 
 
 export class MockApi {
   readonly requests: Req[] = [];
+  /** API requests received but not answered yet, and the ones answered so far. */
+  inflight = 0;
+  readonly answered: Req[] = [];
   readonly unexpected: string[] = [];
   /** Uncaught page errors a test expects (none today). Any other uncaught error fails the test. */
   readonly allowedPageErrors: RegExp[] = [];
@@ -140,7 +143,11 @@ export class MockApi {
     }
     const req: Req = { method: request.method(), path: decodeURIComponent(url.pathname), query: Object.fromEntries(url.searchParams), body, raw };
     this.requests.push(req);
+    this.inflight++;
+    try { await this.reply(route, req, url); } finally { this.inflight--; this.answered.push(req); }
+  }
 
+  private async reply(route: Route, req: Req, url: URL) {
     for (const h of [...this.holds]) if (h.method === req.method && match(h.path, req.path)) await h.promise;
 
     let reply: Reply | undefined;

@@ -1,20 +1,38 @@
-import { test, expect } from "../support/test";
+import { test, expect, fixture } from "../support/test";
+
+// Tests tagged @shell need only the app shell (sidebar, routing, menu, skip link). Step 1 of the
+// migration is done when they pass against the new frontend: FRONTEND=new npx playwright test --grep @shell
 
 test.describe("sidebar and routing", () => {
-  test("loads the board by default with counts in the sidebar", async ({ app, page }) => {
+  test("loads the board by default, with counts and your name in the sidebar @shell", async ({ app, page }) => {
     await app.open();
     await expect(app.section("board")).toBeVisible();
     await expect(app.nav("Internship board")).toHaveAttribute("aria-current", "page");
-    await expect(page.locator("#open-total")).toHaveText("11");
     await expect(page.locator("#tracker-count")).toHaveText("5");
     await expect(page.locator("#companies-count")).toHaveText("4");
-    await expect(page.locator("#board-count-text")).toHaveText("3 company job boards");
     await expect(page.locator("#who-name")).toHaveText("Sam Rivera");
     await expect(page.locator("#who-avatar")).toHaveText("SR");
     await expect(page.locator("#profile-dot")).toBeHidden();
   });
 
-  test("each sidebar link shows its page and marks itself current", async ({ app, page }) => {
+  test("without a profile the sidebar asks you to set one up @shell", async ({ app, api, page }) => {
+    api.profile = fixture("profile-empty.json");
+    api.tracker.items = [];
+    await app.open();
+    await expect(page.locator("#profile-dot")).toBeVisible();
+    await expect(page.locator("#profile-dot")).toHaveText("Set up");
+    await expect(page.locator("#who-name")).toHaveText("Set up your profile");
+    await expect(page.locator("#who-avatar")).toHaveText("?");
+    await expect(page.locator("#tracker-count")).toHaveText("");
+  });
+
+  test("the board heading shows open internships and company boards", async ({ app, page }) => {
+    await app.open();
+    await expect(page.locator("#open-total")).toHaveText("11");
+    await expect(page.locator("#board-count-text")).toHaveText("3 company job boards");
+  });
+
+  test("each sidebar link shows its page and marks itself current @shell", async ({ app, page }) => {
     await app.open();
     const pages: [string, string, RegExp][] = [
       ["Best matches", "board", /#matches$/],
@@ -35,7 +53,7 @@ test.describe("sidebar and routing", () => {
     }
   });
 
-  test("hash routes open directly, and back/forward move between pages", async ({ app, page }) => {
+  test("hash routes open directly, and back/forward move between pages @shell", async ({ app, page }) => {
     await app.open("#tracker");
     await expect(app.section("tracker")).toBeVisible();
     await app.nav("Companies").click();
@@ -70,7 +88,7 @@ test.describe("sidebar and routing", () => {
     await expect(app.section("people").getByLabel("Name")).toBeVisible();
   });
 
-  test("without a hash, the last page you used opens (view key)", async ({ app, page }) => {
+  test("without a hash, the last page you used opens (view key) @shell", async ({ app, page }) => {
     await app.storage({ view: "companies" });
     await app.open();
     await expect(app.section("companies")).toBeVisible();
@@ -78,7 +96,7 @@ test.describe("sidebar and routing", () => {
     await expect.poll(() => page.evaluate(() => localStorage.getItem("view"))).toBe('"tracker"');
   });
 
-  test("unknown hashes fall back to the board", async ({ app }) => {
+  test("unknown hashes fall back to the board @shell", async ({ app }) => {
     await app.open("#nowhere");
     await expect(app.section("board")).toBeVisible();
     await expect(app.nav("Internship board")).toHaveAttribute("aria-current", "page");
@@ -88,7 +106,7 @@ test.describe("sidebar and routing", () => {
 test.describe("mobile menu", () => {
   test.use({ viewport: { width: 400, height: 800 } });
 
-  test("below 900px the sidebar opens from the menu button and closes on Escape, scrim or navigation", async ({ app, page }) => {
+  test("below 900px the sidebar opens from the menu button and closes on Escape, scrim or navigation @shell", async ({ app, page }) => {
     await app.open();
     const menu = page.getByRole("button", { name: "Open menu" });
     const sidebar = page.locator("#sidebar");
@@ -115,7 +133,7 @@ test.describe("mobile menu", () => {
     await expect(page.locator("#scrim")).toBeHidden();
   });
 
-  test("the desktop layout has no menu button", async ({ app, page }) => {
+  test("the desktop layout has no menu button @shell", async ({ app, page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await app.open();
     await expect(page.getByRole("button", { name: "Open menu" })).toBeHidden();
@@ -124,7 +142,7 @@ test.describe("mobile menu", () => {
 });
 
 test.describe("accessibility basics", () => {
-  test("the skip link is the first tab stop and moves focus to the main content", async ({ app, page }) => {
+  test("the skip link is the first tab stop and moves focus to the main content @shell", async ({ app, page }) => {
     await app.open("#tracker");
     await page.keyboard.press("Tab");
     const skip = page.getByRole("link", { name: "Skip to content" });

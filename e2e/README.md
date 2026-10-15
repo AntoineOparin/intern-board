@@ -14,6 +14,7 @@ npm test                          # about 25 seconds
 ```
 
 - **Against the current frontend (the default):** Playwright serves `board/static` with `python3 -m http.server` on port 8781.
+- **Against the Svelte build:** `npm run test:new` (or `FRONTEND=new npx playwright test`). The same static server serves `board/static/app/` at `/app/`. Until every page has moved, run only the migrated pages' tests, for example `--grep @shell` after step 1.
 - **Against another build:** set `APP_URL`, e.g. `APP_URL=http://127.0.0.1:8766/next/ npm test`. No server is started; serve the build yourself. Every test opens pages relative to `APP_URL`, and `/api/*` is mocked on that origin.
 - **One file or test:** `npx playwright test tests/people.spec.ts`, or add `-g "Rewrite"`.
 - **Debugging:** `npm run test:headed`. For a failure, open the trace with `npx playwright show-trace test-results/<test>/trace.zip`.

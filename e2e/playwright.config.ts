@@ -1,10 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// The suite runs against whichever frontend APP_URL points at. Without APP_URL it serves the
-// current frontend (board/static) as plain files; no backend runs, and every /api call is mocked.
+// The suite runs against whichever frontend APP_URL points at. Without APP_URL it serves board/static
+// as plain files: the old frontend at /, and the Svelte build (board/static/app) at /app/ when
+// FRONTEND=new. No backend runs, and every /api call is mocked.
 const DEFAULT_PORT = 8781;
-const APP_URL = process.env.APP_URL || `http://127.0.0.1:${DEFAULT_PORT}/`;
-const serveOldFrontend = !process.env.APP_URL;
+const APP_URL = process.env.APP_URL || `http://127.0.0.1:${DEFAULT_PORT}/${process.env.FRONTEND === "new" ? "app/" : ""}`;
+const serveStatic = !process.env.APP_URL;
 
 export default defineConfig({
   testDir: "./tests",
@@ -24,10 +25,10 @@ export default defineConfig({
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
   ],
-  webServer: serveOldFrontend
+  webServer: serveStatic
     ? {
         command: `python3 -m http.server ${DEFAULT_PORT} --bind 127.0.0.1 --directory ../board/static`,
-        url: APP_URL,
+        url: `http://127.0.0.1:${DEFAULT_PORT}/`,
         reuseExistingServer: !process.env.CI,
         stdout: "ignore",
         stderr: "ignore",

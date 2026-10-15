@@ -88,6 +88,7 @@ The Python tests only cover the backend, so "same as before" needs its own proof
 ## Order of work
 1. **Scaffold:** Vite + Svelte + TS project, typed API client, the app shell (sidebar, routing, toast), the build served at `/next/`.
    - **Done when:** the shell loads with the sidebar and every nav item routes to a placeholder, `npm run check` is clean, the Python tests pass, and the step 0 shell tests pass against `/next/`.
+   - **Status:** done. The build is committed (so `./run.sh` needs only Python; see the README). Shell tests are tagged `@shell`: `cd e2e && FRONTEND=new npx playwright test --grep @shell`.
 2. **Find People**, the most complex page, which proves the approach. Its three steps:
    1. pick a tracked job;
    2. Recruiters or Coffee chats;

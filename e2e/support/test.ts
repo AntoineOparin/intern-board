@@ -44,8 +44,13 @@ export class App {
     await this.ready();
   }
 
+  /** The app has loaded the tracker and has no API request outstanding. Where the board is rendered
+   *  (always in the old app, which renders it even on other pages), also wait for its first results. */
   async ready() {
-    await expect(this.page.locator("#result-count")).toHaveText(/internship/);
+    await expect.poll(() => this.api.answered.some(r => r.method === "GET" && r.path === "/api/tracker") && this.api.inflight === 0,
+      { message: "app finished loading" }).toBe(true);
+    const count = this.page.locator("#result-count");
+    if (await count.count()) await expect(count).toHaveText(/internship/);
   }
 
   async reload() {

@@ -120,6 +120,8 @@ test.describe("custom dropdowns", () => {
     await button.click();
     await expect(page.locator(".ui-select.open")).not.toHaveClass(/\bup\b/);
     await page.keyboard.press("Escape");
+    // Opening scrolls the highlighted option into view, which can scroll the page; start from the top.
+    await page.evaluate(() => scrollTo(0, 0));
 
     const box = (await button.boundingBox())!;
     const height = Math.ceil(box.y + box.height + 60);

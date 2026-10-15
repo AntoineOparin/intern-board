@@ -18,8 +18,12 @@ A personal, local web app: software and tech internships in Canada and the US, a
   - `features/*.js|css`: ranking, documents, people (Find People page).
   - `select.js`: custom dropdowns layered over the native `<select>`s.
   - `doc.html`: the printable resume and cover-letter page.
+- **New frontend:** Svelte 5 + TypeScript + Vite in `frontend/`, built into `board/static/app/` (committed) and served at `/next/` during the migration.
+  - `src/lib/api.ts`: typed client for every endpoint, plus `runJob()`. `src/lib/types.ts`: response shapes.
+  - `src/lib/stores/`: shared state (router, meta, tracker, profile, credits, toast). `src/pages/`: one component per page.
+  - After a change, run `npm run check`, `npm test` and `npm run build` in `frontend/`, and commit the build.
 - **Tests:** stdlib `unittest` in `tests/`. Run them with `.venv/bin/python -m unittest`. Claude and Prospeo are always mocked.
-- **Frontend parity tests:** Playwright in `e2e/` (`cd e2e && npm test`; see `e2e/README.md`), with every `/api/*` call answered by made-up fixtures. They never use the real database, Claude or Prospeo. Known bugs are listed in `e2e/README.md`.
+- **Frontend parity tests:** Playwright in `e2e/` (`cd e2e && npm test`, or `npm run test:new` for the Svelte build; see `e2e/README.md`), with every `/api/*` call answered by made-up fixtures. They never use the real database, Claude or Prospeo. Known bugs are listed in `e2e/README.md`.
 
 ## Running
 - `./run.sh` serves http://localhost:8765 and refreshes listings hourly.
