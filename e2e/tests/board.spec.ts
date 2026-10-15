@@ -144,6 +144,7 @@ test.describe("filters", () => {
     await filters.locator(".segmented label", { hasText: "Canada" }).click();
     await expect.poll(() => api.listingQueries().at(-1)?.region).toBe("CA");
     await expect(filters.locator(".segmented label", { hasText: "Canada" })).toHaveText("Canada 5");
+    await expect(filters.locator(".segmented label").first()).toHaveText("All 11"); // every segment shows a count
 
     await app.choose("Category", "Software · 5");
     await expect.poll(() => api.listingQueries().at(-1)?.category).toBe("Software");

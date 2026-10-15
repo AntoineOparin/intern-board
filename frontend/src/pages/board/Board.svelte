@@ -137,7 +137,7 @@
     <kbd>/</kbd>
   </label>
   <div class="segmented" role="radiogroup" aria-label="Region">
-    <label><input type="radio" name="region" value="" bind:group={filters.region} onchange={changed}><span>All</span></label>
+    <label><input type="radio" name="region" value="" bind:group={filters.region} onchange={changed}><span>All <em data-count="all">{meta.data ? meta.data.active.toLocaleString() : ""}</em></span></label>
     <label><input type="radio" name="region" value="US" bind:group={filters.region} onchange={changed}><span>US <em data-count="US">{regionCount("US")}</em></span></label>
     <label><input type="radio" name="region" value="CA" bind:group={filters.region} onchange={changed}><span>Canada <em data-count="CA">{regionCount("CA")}</em></span></label>
     <label><input type="radio" name="region" value="REMOTE" bind:group={filters.region} onchange={changed}><span>Remote <em data-count="REMOTE">{regionCount("REMOTE")}</em></span></label>
