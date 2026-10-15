@@ -111,6 +111,7 @@ The Python tests only cover the backend, so "same as before" needs its own proof
 5. **Resume tailor / Cover letter pages and `doc.html`:** the printable page with the one-page fit check, in-place editing and Save.
    - **Status:** done. `frontend/src/pages/documents/ToolPage.svelte`, and `doc.html` as a second Vite entry (`src/pages/doc/`). Screenshots of every migrated page match the old ones at 1440 px and 400 px.
 6. **Companies and Profile:** watchlist table, add-by-link form, resume upload and extraction, preferences (including LinkedIn Premium), Ranking panel.
+   - **Status:** done. Every page now runs in the new app. The full parity suite passes against `/next/` (`cd e2e && npm run test:new`), and the screenshots match the old app.
 7. **Switch over:**
    - Serve the new app at `/` and point the parity suite's default `APP_URL` at it.
    - Delete the old `board/static/*.js`, `features/` and `select.js`.

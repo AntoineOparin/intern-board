@@ -10,6 +10,7 @@
   import { ranking } from "../../lib/stores/ranking.svelte";
   import { profile, hasProfileData } from "../../lib/stores/profile.svelte";
   import { route, navigate } from "../../lib/stores/router.svelte";
+  import { companies, loadCompanies } from "../../lib/stores/companies.svelte";
   import type { Count, Listing } from "../../lib/types";
 
   let { visible }: { visible: boolean } = $props();
@@ -113,7 +114,7 @@
     <p class="lede">Software and tech roles in Canada and the US, from SimplifyJobs, three more community lists and <span id="board-count-text">{meta.data?.boards.enabled ? `${(meta.data.boards.hiring ?? 0).toLocaleString()} company job boards` : "company job boards"}</span>. Only listings posted in the last 30 days are shown.</p>
     <div class="board-sync">
       <span id="sync-status" class="sync-status {sync.kind}" title={!board.syncOverride ? meta.data?.last_error || "" : ""}><span class="dot"></span><span class="label">{sync.text}</span></span>
-      <button id="refresh-btn" class="btn btn-quiet" class:spinning={board.refreshing} disabled={board.refreshing} onclick={() => refreshNow()}
+      <button id="refresh-btn" class="btn btn-quiet" class:spinning={board.refreshing} disabled={board.refreshing} onclick={() => refreshNow(companies.loaded ? loadCompanies : undefined)}
         title="Check every source for new internships now (about 30–60 seconds)">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>
         <span>{board.refreshing ? "Refreshing…" : "Refresh"}</span>

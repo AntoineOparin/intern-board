@@ -3,26 +3,23 @@
   import Icon from "./lib/components/Icon.svelte";
   import Sidebar from "./lib/components/Sidebar.svelte";
   import Toast from "./lib/components/Toast.svelte";
-  import Placeholder from "./pages/Placeholder.svelte";
   import FindPeople from "./pages/people/FindPeople.svelte";
-  import Integrations from "./pages/profile/Integrations.svelte";
+  import Profile from "./pages/profile/Profile.svelte";
+  import Companies from "./pages/companies/Companies.svelte";
+  import { companies, loadCompanies } from "./lib/stores/companies.svelte";
   import Board from "./pages/board/Board.svelte";
   import Drawer from "./lib/components/Drawer.svelte";
   import Tracker from "./pages/tracker/Tracker.svelte";
   import ToolPage from "./pages/documents/ToolPage.svelte";
   import { board, filtersChanged, loadListings, updateNewCount } from "./lib/stores/board.svelte";
   import { filters, restoreFilters } from "./lib/stores/filters.svelte";
-  import { refreshStatus } from "./lib/stores/ranking.svelte";
+  import { refreshStatus, followRunningJob } from "./lib/stores/ranking.svelte";
   import { visitBaseline, trackActivity } from "./lib/visits";
-  import { route, startRouter, VIEWS, type View } from "./lib/stores/router.svelte";
+  import { route, startRouter, VIEWS } from "./lib/stores/router.svelte";
   import { loadMeta } from "./lib/stores/meta.svelte";
   import { loadTracker } from "./lib/stores/tracker.svelte";
   import { profile, loadProfile } from "./lib/stores/profile.svelte";
 
-  const TITLES: Record<View, string> = {
-    board: "Internship board", matches: "Best matches", tracker: "Applications", companies: "Company watchlist",
-    profile: "Your profile", resume: "Resume tailor", cover: "Cover letter", people: "Find People",
-  };
   // Before anything renders: the "new since last visit" baseline, saved filters, then the route.
   board.prevVisit = visitBaseline();
   restoreFilters();
@@ -37,6 +34,8 @@
       if (view === "board" && previous === "matches" && filters.sort === "match") { filters.sort = "posted"; filtersChanged(); }
     });
   });
+
+  $effect(() => { if (route.view === "companies" && !untrack(() => companies.loaded)) loadCompanies().catch(() => {}); });
 
   // ---------- mobile menu ----------
   let navOpen = $state(false);
@@ -54,7 +53,10 @@
     const stopActivity = trackActivity();
     let timer: ReturnType<typeof setInterval> | undefined;
     // Scores for listings added since the last check are filled in by the status call.
-    refreshStatus().then(s => { if (s?.computed && filters.sort === "match") loadListings(true); });
+    refreshStatus().then(s => {
+      if (s?.computed && filters.sort === "match") loadListings(true);
+      if (s?.running_job) followRunningJob(s.running_job); // ranking still going from an earlier visit
+    });
     (async () => {
       let m = await loadMeta();
       // On the very first run the server is still importing; wait for it.
@@ -93,8 +95,8 @@
   <section id="tracker-view" class="view" aria-labelledby="tracker-heading" hidden={section !== "tracker"}>
     <Tracker />
   </section>
-  <section id="companies-view" class="view" aria-label="Companies" hidden={section !== "companies"}>
-    <Placeholder title={TITLES.companies} view="companies" />
+  <section id="companies-view" class="view" aria-labelledby="companies-heading" hidden={section !== "companies"}>
+    <Companies />
   </section>
   <section id="tool-view" class="view" aria-labelledby="tool-heading" hidden={section !== "tool"}>
     {#if section === "tool"}<ToolPage view={route.view === "cover" ? "cover" : "resume"} />{/if}
@@ -102,9 +104,8 @@
   <section id="people-view" class="view" aria-label="Find people" hidden={section !== "people"}>
     <FindPeople />
   </section>
-  <section id="profile-view" class="view" aria-label="Your profile" hidden={section !== "profile"}>
-    <Placeholder title={TITLES.profile} view="profile" />
-    {#if section === "profile"}<div id="profile-extras"><Integrations /></div>{/if}
+  <section id="profile-view" class="view" aria-labelledby="profile-heading" hidden={section !== "profile"}>
+    {#if section === "profile"}<Profile />{/if}
   </section>
 </main>
 
