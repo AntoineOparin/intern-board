@@ -109,6 +109,7 @@ The Python tests only cover the backend, so "same as before" needs its own proof
 4. **Tracker:** kanban with drag and drop and keyboard alternatives, plus the side panel (stage, deadline, notes, Documents and People sections).
    - **Status:** done. `frontend/src/pages/tracker/`. On a focused card, Alt with ←/→ moves it to another stage and Alt with ↑/↓ reorders it. A screen-reader hint and a live announcement explain this, and the visible copy is unchanged. The Documents section (`src/pages/documents/DocsSection.svelte`) is shared with the tool pages in step 5.
 5. **Resume tailor / Cover letter pages and `doc.html`:** the printable page with the one-page fit check, in-place editing and Save.
+   - **Status:** done. `frontend/src/pages/documents/ToolPage.svelte`, and `doc.html` as a second Vite entry (`src/pages/doc/`). Screenshots of every migrated page match the old ones at 1440 px and 400 px.
 6. **Companies and Profile:** watchlist table, add-by-link form, resume upload and extraction, preferences (including LinkedIn Premium), Ranking panel.
 7. **Switch over:**
    - Serve the new app at `/` and point the parity suite's default `APP_URL` at it.

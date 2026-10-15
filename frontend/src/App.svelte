@@ -9,6 +9,7 @@
   import Board from "./pages/board/Board.svelte";
   import Drawer from "./lib/components/Drawer.svelte";
   import Tracker from "./pages/tracker/Tracker.svelte";
+  import ToolPage from "./pages/documents/ToolPage.svelte";
   import { board, filtersChanged, loadListings, updateNewCount } from "./lib/stores/board.svelte";
   import { filters, restoreFilters } from "./lib/stores/filters.svelte";
   import { refreshStatus } from "./lib/stores/ranking.svelte";
@@ -95,8 +96,8 @@
   <section id="companies-view" class="view" aria-label="Companies" hidden={section !== "companies"}>
     <Placeholder title={TITLES.companies} view="companies" />
   </section>
-  <section id="tool-view" class="view" aria-label="Internship tools" hidden={section !== "tool"}>
-    <Placeholder title={TITLES[route.view === "cover" ? "cover" : "resume"]} view={route.view === "cover" ? "cover" : "resume"} />
+  <section id="tool-view" class="view" aria-labelledby="tool-heading" hidden={section !== "tool"}>
+    {#if section === "tool"}<ToolPage view={route.view === "cover" ? "cover" : "resume"} />{/if}
   </section>
   <section id="people-view" class="view" aria-label="Find people" hidden={section !== "people"}>
     <FindPeople />

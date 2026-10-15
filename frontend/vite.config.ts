@@ -6,7 +6,11 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 export default defineConfig({
   plugins: [svelte()],
   base: "./",
-  build: { outDir: "../board/static/app", emptyOutDir: true },
+  build: {
+    outDir: "../board/static/app",
+    emptyOutDir: true,
+    rollupOptions: { input: { main: "index.html", doc: "doc.html" } }, // the app, and the printable document page
+  },
   server: {
     port: 5173,
     // `npm run dev` talks to a test server: INTERN_BOARD_NO_REFRESH=1 uvicorn ... --port 8766

@@ -18,16 +18,16 @@ test.describe("screenshots", () => {
       for (const [name, hash] of PAGES) {
         await app.open(hash);
         await page.evaluate(() => document.fonts.ready);
-        await page.screenshot({ path: `${DIR}/${name}-${width}.png`, fullPage: true });
+        await page.screenshot({ path: `${DIR}/${name}-${width}.png`, fullPage: true, animations: "disabled" });
       }
       await app.open("#tracker");
       await app.card("Acme Robotics").click();
       await expect(app.drawer()).toBeVisible();
-      await page.screenshot({ path: `${DIR}/drawer-${width}.png` });
+      await page.screenshot({ path: `${DIR}/drawer-${width}.png`, animations: "disabled" });
       for (const id of ["doc-resume-1", "doc-letter-1"]) {
         await page.goto(`./doc.html?id=${id}`);
         await expect(page.locator("#doc-fit")).not.toBeEmpty();
-        await page.screenshot({ path: `${DIR}/${id}-${width}.png`, fullPage: true });
+        await page.screenshot({ path: `${DIR}/${id}-${width}.png`, fullPage: true, animations: "disabled" });
       }
     });
   }
