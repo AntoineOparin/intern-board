@@ -16,6 +16,19 @@ class ClassifyTest(unittest.TestCase):
 
     def test_ca_means_california_not_canada(self):
         self.assertEqual(classify("Palo Alto, CA"), {"US"})
+        self.assertEqual(classify("Montreal, CA"), {"CA"})  # unless the city is Canadian
+        self.assertEqual(classify("Toronto, ON, CA"), {"CA"})
+        self.assertEqual(classify("Montréal, Quebec, CAN"), {"CA"})
+
+    def test_montreal_as_company_boards_write_it(self):
+        for loc in ["Montréal, Québec", "Montreal", "Montréal", "Montreal (St. Laurent)", "Montreal, QC (Hybrid)",
+                    "Montréal, QC - Hybride", "Hybrid - Montreal", "Greater Montreal Area", "Laval, Québec",
+                    "Quebec City", "Toronto"]:
+            self.assertEqual(classify(loc), {"CA"}, loc)
+        self.assertEqual(classify("Télétravail - Canada"), {"REMOTE", "CA"})
+        self.assertEqual(classify("Seattle"), {"US"})
+        for loc in ["London", "Waterloo", "Cambridge"]:  # more than one country has these
+            self.assertEqual(classify(loc), set(), loc)
 
     def test_remote(self):
         self.assertEqual(classify("Remote"), {"REMOTE"})

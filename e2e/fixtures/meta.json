@@ -32,5 +32,12 @@
     { "value": "simplify", "count": 5 },
     { "value": "zapply", "count": 1 }
   ],
+  "sponsorship": [
+    { "value": null, "count": 7 },
+    { "value": "Does Not Offer Sponsorship", "count": 1 },
+    { "value": "May Offer Sponsorship", "count": 1 },
+    { "value": "Offers Sponsorship", "count": 1 },
+    { "value": "U.S. Citizenship is Required", "count": 1 }
+  ],
   "boards": { "total": 5, "enabled": 4, "hiring": 3 }
 }

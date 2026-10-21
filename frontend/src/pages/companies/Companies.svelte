@@ -5,7 +5,12 @@
   import { companies, loadCompanies } from "../../lib/stores/companies.svelte";
   import { loadMeta } from "../../lib/stores/meta.svelte";
   import { loadListings } from "../../lib/stores/board.svelte";
-  import type { Company } from "../../lib/types";
+  import type { Company, Platform } from "../../lib/types";
+
+  const PLATFORMS: Record<Platform, string> = {
+    greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby", workday: "Workday", smartrecruiters: "SmartRecruiters",
+    workable: "Workable", bamboohr: "BambooHR", rippling: "Rippling", breezy: "Breezy", recruiterbox: "Recruiterbox",
+  };
 
   let q = $state("");
   let show = $state<"hiring" | "all" | "off">("hiring");
@@ -51,7 +56,7 @@
     msg = { text: "", kind: "" };
     if (link.length < 3) {
       invalid = true;
-      msg = { text: "Paste a link to the company's Greenhouse, Lever or Ashby job board.", kind: "error" };
+      msg = { text: "Paste a link to the company's careers page or job board.", kind: "error" };
       urlInput.focus();
       return;
     }
@@ -80,14 +85,14 @@
 <div class="intro intro-compact">
   <div>
     <h1 id="companies-heading">Company watchlist</h1>
-    <p class="lede">These Greenhouse, Lever and Ashby job boards are read directly. Boards with internships are checked hourly, the rest every 6 hours.</p>
+    <p class="lede">These job boards are read directly, including a list of Montreal employers. Boards with internships are checked hourly, the rest every 6 hours. To add a company, paste its careers page or any of its job postings.</p>
   </div>
 </div>
 
 <form id="add-company" class="add-company" class:invalid autocomplete="off" novalidate onsubmit={add}>
   <label class="field grow">
-    <span>Job board link</span>
-    <input name="url" type="text" required placeholder="jobs.lever.co/company or job-boards.greenhouse.io/company" bind:value={url} bind:this={urlInput}>
+    <span>Careers page or job board link</span>
+    <input name="url" type="text" required placeholder="company.com/careers or jobs.lever.co/company" bind:value={url} bind:this={urlInput}>
   </label>
   <label class="field">
     <span>Name <em>(optional)</em></span>
@@ -119,7 +124,7 @@
         {@const st = status(c)}
         <tr class:off={!c.enabled}>
           <td class="c-name"><a href={c.board_url} target="_blank" rel="noopener">{c.name}</a>{#if c.origin === "manual"}<span class="manual">added by you</span>{/if}</td>
-          <td class="platform">{c.platform}</td>
+          <td class="platform">{PLATFORMS[c.platform] ?? c.platform}</td>
           <td class="r">{c.listings || "–"}</td>
           <td class="r">{c.jobs_total ?? "–"}</td>
           <td class="muted">{#if st.err}<span class="status-err" title={st.title || undefined}>{st.text}</span>{:else}{st.text}{/if}</td>

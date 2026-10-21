@@ -23,12 +23,23 @@
   const degrees = $derived(opts(meta.data?.degrees, "Any degree"));
   const SOURCES = [
     { value: "", label: "All sources" }, { value: "simplify", label: "SimplifyJobs list" }, { value: "board", label: "Company boards" },
-    { value: "negarprh", label: "Canadian Tech Internships" }, { value: "michelleokolie", label: "Canada Tech Internships" }, { value: "zapply", label: "Zapply" },
+    { value: "negarprh", label: "Canadian Tech Internships" }, { value: "michelleokolie", label: "Canada Tech Internships" },
+    { value: "frogg", label: "Frogg Canadian Internships" }, { value: "zapply", label: "Zapply" },
   ];
   const SORTS = [
     { value: "posted", label: "Newest posted" }, { value: "added", label: "Recently added here" },
     { value: "company", label: "Company A–Z" }, { value: "match", label: "Best match" },
   ];
+  // Sponsorship: what US postings say (or the source list, when the posting doesn't say).
+  const sponsorCount = (v: string) => meta.data?.sponsorship?.find(x => x.value === v)?.count ?? 0;
+  const sponsorships = $derived([
+    { value: "", label: "Any sponsorship" },
+    { value: "offers", label: `Offers sponsorship · ${sponsorCount("Offers Sponsorship").toLocaleString()}` },
+    { value: "likely", label: `Offers or may sponsor · ${(sponsorCount("Offers Sponsorship")
+      + sponsorCount("May Offer Sponsorship")).toLocaleString()}` },
+    { value: "open", label: `Not ruled out · ${((meta.data?.active ?? 0) - sponsorCount("Does Not Offer Sponsorship")
+      - sponsorCount("U.S. Citizenship is Required")).toLocaleString()}` },
+  ]);
   const regionCount = (r: string) => (meta.data?.regions.find(x => x.value === r)?.count ?? 0).toLocaleString();
   const sourceCount = (s: string) => (meta.data?.sources.find(x => x.value === s)?.count ?? 0).toLocaleString();
 
@@ -111,11 +122,11 @@
 <div class="intro">
   <div>
     <h1 id="board-heading"><span id="open-total" class="num">{meta.data ? meta.data.active.toLocaleString() : "–"}</span> open internships</h1>
-    <p class="lede">Software and tech roles in Canada and the US, from SimplifyJobs, three more community lists and <span id="board-count-text">{meta.data?.boards.enabled ? `${(meta.data.boards.hiring ?? 0).toLocaleString()} company job boards` : "company job boards"}</span>. Only listings posted in the last 30 days are shown.</p>
+    <p class="lede">Software and tech roles in Canada and the US, from SimplifyJobs, four more community lists and <span id="board-count-text">{meta.data?.boards.enabled ? `${(meta.data.boards.hiring ?? 0).toLocaleString()} company job boards` : "company job boards"}</span>. Only listings posted in the last 30 days are shown.</p>
     <div class="board-sync">
       <span id="sync-status" class="sync-status {sync.kind}" title={!board.syncOverride ? meta.data?.last_error || "" : ""}><span class="dot"></span><span class="label">{sync.text}</span></span>
       <button id="refresh-btn" class="btn btn-quiet" class:spinning={board.refreshing} disabled={board.refreshing} onclick={() => refreshNow(companies.loaded ? loadCompanies : undefined)}
-        title="Check every source for new internships now (about 30–60 seconds)">
+        title="Check every source for new internships now (about 1–2 minutes)">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>
         <span>{board.refreshing ? "Refreshing…" : "Refresh"}</span>
       </button>
@@ -146,6 +157,7 @@
     <Select name="category" label="Category" options={categories} bind:value={filters.category} class={filters.category ? "set" : ""} onchange={changed} />
     <Select name="term" label="Term" options={terms} bind:value={filters.term} class={filters.term ? "set" : ""} onchange={changed} />
     <Select name="degree" label="Degree" options={degrees} bind:value={filters.degree} class={filters.degree ? "set" : ""} onchange={changed} />
+    <Select name="sponsorship" label="Sponsorship" options={sponsorships} bind:value={filters.sponsorship} class={filters.sponsorship ? "set" : ""} onchange={changed} />
     <Select name="source" label="Source" options={SOURCES} bind:value={filters.source} class={filters.source ? "set" : ""} onchange={changed} />
     <Select name="sort" label="Sort" options={SORTS} bind:value={filters.sort} onchange={changed} />
     <label class="toggle"><input type="checkbox" name="new_only" bind:checked={filters.new_only} onchange={changed}><span>New only</span></label>
@@ -155,6 +167,13 @@
 </form>
 
 <p id="result-count" class="result-count" aria-live="polite">{board.loaded ? `${board.total.toLocaleString()} internship${board.total === 1 ? "" : "s"}` : ""}</p>
+{#if filters.sponsorship}
+  <p id="sponsorship-note" class="filter-note">{{
+    offers: "Listings whose posting, or the SimplifyJobs list, says it sponsors visas.",
+    likely: "Also includes Zapply's estimates (“May sponsor”), which aren't statements from the employer. Check the posting before you apply.",
+    open: "Hides listings whose posting says it can't sponsor visas or needs US citizenship or a clearance. Most postings don't say either way, so check before you apply.",
+  }[filters.sponsorship]}</p>
+{/if}
 {#if rankNote}
   <p id="rank-note" class="rank-note">Best match needs your resume. <a class="link" href="#profile">Add it on the Profile tab</a>
     and every listing gets a score.</p>

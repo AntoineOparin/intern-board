@@ -30,11 +30,16 @@ test.describe("listings", () => {
     await expect(direct.locator(".tag.direct")).toHaveText("Direct");
     const zapply = app.listing("Lumen Health", "Backend Developer Intern");
     await expect(zapply.getByRole("link", { name: "via Zapply" })).toHaveAttribute("href", "https://github.com/zapplyjobs/Internships-2027");
-    await expect(zapply.locator(".tag.warn")).toHaveText("Offers Sponsorship");
+    await expect(zapply.locator(".tag.maybe")).toHaveText("May sponsor"); // Zapply's estimate, shown as one
+    await expect(zapply.locator(".tag.maybe")).toHaveAttribute("title", "Zapply's estimate, not a statement from the employer.");
+    await expect(app.listing("Orbit Analytics").locator(".tag.ok")).toHaveText("Offers sponsorship");
+    await expect(direct.locator(".tag.warn")).toHaveText("No sponsorship");
+    await expect(direct.locator(".tag.warn"))
+      .toHaveAttribute("title", "The posting says: “We are unable to sponsor visas for this internship.”");
     await expect(app.listing("Maple Systems").getByRole("link", { name: "via Canadian Tech Internships" })).toBeVisible();
     await expect(app.listing("Polar Labs").getByRole("link", { name: "via Canada Tech Internships" })).toBeVisible();
-    await expect(app.listing("Quillfeather Capital").locator(".tag.warn")).toHaveText("U.S. Citizenship is Required");
-    await expect(app.listing("Birch & Co").locator(".tag.warn")).toHaveCount(0); // "Other" sponsorship isn't shown
+    await expect(app.listing("Quillfeather Capital").locator(".tag.warn")).toHaveText("US citizens only");
+    await expect(app.listing("Birch & Co").locator(".tag.ok, .tag.maybe, .tag.warn")).toHaveCount(0); // unknown isn't shown
   });
 
   test("sorting by date added, company and match changes the groups", async ({ app, api, page }) => {
@@ -183,6 +188,28 @@ test.describe("filters", () => {
     await expect(page.locator("#result-count")).toHaveText("0 internships"); // Acme and Juniper are tracked
   });
 
+  test("the sponsorship filter shows counts, is sent to /api/listings and explains itself", async ({ app, api, page }) => {
+    await app.open();
+    await expect(page.locator("#sponsorship-note")).toHaveCount(0);
+    await app.choose("Sponsorship", "Offers sponsorship · 1");
+    await expect.poll(() => api.listingQueries().at(-1)?.sponsorship).toBe("offers");
+    await expect(page.locator("#result-count")).toHaveText("1 internship");
+    await expect(app.listing("Orbit Analytics")).toBeVisible();
+    await expect(page.locator("#sponsorship-note")).toContainText("says it sponsors visas");
+
+    await app.choose("Sponsorship", "Offers or may sponsor · 2");
+    await expect.poll(() => api.listingQueries().at(-1)?.sponsorship).toBe("likely");
+    await expect(page.locator("#result-count")).toHaveText("2 internships");
+    await expect(page.locator("#sponsorship-note")).toContainText("aren't statements from the employer");
+
+    await app.choose("Sponsorship", "Not ruled out · 9");
+    await expect.poll(() => api.listingQueries().at(-1)?.sponsorship).toBe("open");
+    await expect(page.locator("#result-count")).toHaveText("9 internships");
+    await expect(app.listing("Quillfeather Capital")).toHaveCount(0);
+    await expect(page.locator("#sponsorship-note")).toContainText("Most postings don't say either way");
+    await expect(page.getByRole("button", { name: "Clear filters" })).toBeVisible();
+  });
+
   test("New only sends since = the visit baseline", async ({ app, api, page }) => {
     await app.storage({ lastActive: NOW - 6 * HOUR, baseline: NOW - 2 * DAY });
     await app.open();
@@ -201,7 +228,7 @@ test.describe("filters", () => {
     await expect.poll(() => api.listingQueries().at(-1)?.q).toBe("data");
     await expect(clear).toBeVisible();
     expect(JSON.parse((await page.evaluate(() => localStorage.getItem("filters")))!)).toEqual({
-      q: "data", region: "US", category: "AI/ML/Data", term: "", degree: "", source: "", sort: "posted",
+      q: "data", region: "US", category: "AI/ML/Data", term: "", degree: "", source: "", sponsorship: "", sort: "posted",
       new_only: false, hide_tracked: false,
     });
 
@@ -304,7 +331,7 @@ test.describe("refresh", () => {
     await expect(button).toBeDisabled();
     await expect(button).toHaveText("Refreshing…");
     await expect(button).toHaveClass(/spinning/);
-    await expect(page.locator("#refresh-result")).toHaveText("Checking every source, about 30–60 seconds.");
+    await expect(page.locator("#refresh-result")).toHaveText("Checking every source, about 1–2 minutes.");
     await expect(sync).toHaveText("Checking sources…");
     await expect(sync).toHaveClass(/busy/);
     const before = api.requests.length;

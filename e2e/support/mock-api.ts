@@ -339,6 +339,9 @@ export class MockApi {
     if (q.category) items = items.filter(l => l.category === q.category);
     if (q.term) items = items.filter(l => l.terms.includes(q.term));
     if (q.degree) items = items.filter(l => l.degrees.includes(q.degree));
+    if (q.sponsorship === "offers") items = items.filter(l => l.sponsorship === "Offers Sponsorship");
+    if (q.sponsorship === "likely") items = items.filter(l => ["Offers Sponsorship", "May Offer Sponsorship"].includes(l.sponsorship));
+    if (q.sponsorship === "open") items = items.filter(l => !["Does Not Offer Sponsorship", "U.S. Citizenship is Required"].includes(l.sponsorship));
     if (+q.since) items = items.filter(l => l.first_seen > +q.since);
     if (q.hide_tracked === "true") items = items.filter(l => !trackedIds.has(l.id));
     const desc = (k: string) => (a: any, b: any) => (b[k] ?? -Infinity) - (a[k] ?? -Infinity);

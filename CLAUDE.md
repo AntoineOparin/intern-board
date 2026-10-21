@@ -5,8 +5,9 @@ A personal, local web app: software and tech internships in Canada and the US, a
 ## Stack and layout
 - **Backend:** Python 3.14, FastAPI and SQLite, in `board/`. Dependencies are in `requirements.txt` and the virtualenv is at `.venv/`.
   - `main.py`: app, listings/tracker/companies/meta API, AI job endpoints, static file serving.
-  - `sources.py`: hourly refresh. Pulls SimplifyJobs, company boards (`ats.py`: Greenhouse, Lever, Ashby) and other GitHub lists (`community.py`). Handles de-duplication and dates "first seen".
-  - `locations.py`: decides whether a location is US, Canada, remote, or neither.
+  - `sources.py`: hourly refresh. Pulls SimplifyJobs, company boards (`ats.py`: Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, BambooHR, Rippling, Breezy, Recruiterbox, plus finding the board behind a careers page) and other GitHub lists (`community.py`). Handles de-duplication and dates "first seen". `montreal.py` lists Montreal employers' boards that are always watched.
+  - `locations.py`: decides whether a location is US, Canada, remote, or neither (accents, French, city-only names). `fold()` is also the accent-insensitive search.
+  - `visa.py`: after each refresh, reads new US postings through their board's API (`postings.api_text`, no Claude) for sponsorship statements, stored in `listings.visa` with the sentence. Zapply's sponsor flag is only an estimate ("May Offer Sponsorship") and must not be shown as the employer's statement.
   - `db.py`: schema and in-place migrations (`MIGRATIONS`), plus `visible()`, which hides listings older than 30 days.
   - `ai.py`: calls the local **Claude Code CLI** (`claude -p`) on the user's plan. There's no API key.
   - `jobs.py`: background AI jobs. The browser starts one and polls it.

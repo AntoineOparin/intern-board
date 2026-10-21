@@ -10,7 +10,7 @@ test.describe("company watchlist", () => {
     await expect(rows(page).locator(".c-name a")).toHaveText(["Northwind Data", "Quillfeather Capital", "Lumen Health"]);
 
     const northwind = rows(page).filter({ hasText: "Northwind Data" });
-    await expect(northwind.locator("td")).toHaveText(["Northwind Data", "greenhouse", "2", "42", "1h ago", ""]);
+    await expect(northwind.locator("td")).toHaveText(["Northwind Data", "Greenhouse", "2", "42", "1h ago", ""]);
     await expect(northwind.getByRole("link", { name: "Northwind Data" })).toHaveAttribute("href", "https://job-boards.greenhouse.io/northwind");
     await expect(northwind.getByRole("checkbox", { name: "Watch Northwind Data" })).toBeChecked();
     const quill = rows(page).filter({ hasText: "Quillfeather" });
@@ -62,6 +62,19 @@ test.describe("company watchlist", () => {
     await expect(harbor).not.toHaveClass(/off/);
   });
 
+  test("Workday boards show their platform, and the switch sends the whole token", async ({ app, api, page }) => {
+    api.companies.push({
+      platform: "workday", token: "cae.wd3/career", name: "CAE", enabled: 1, origin: "auto", added_at: 1788112800,
+      last_checked: 1791997200, last_status: "ok", last_error: null, jobs_total: 384, interns: 11, listings: 11,
+      board_url: "https://cae.wd3.myworkdayjobs.com/career",
+    });
+    await app.open("#companies");
+    const cae = rows(page).filter({ hasText: "CAE" });
+    await expect(cae.locator("td").nth(1)).toHaveText("Workday");
+    await cae.getByRole("checkbox", { name: "Watch CAE" }).uncheck({ force: true });
+    expect(api.last("PATCH", "/api/companies/workday/cae.wd3/career")?.body).toEqual({ enabled: false });
+  });
+
   test("a failed switch change flips back", async ({ app, api, page }) => {
     api.on("PATCH", /^\/api\/companies\//, detail(404, "Unknown company"));
     await app.open("#companies");
@@ -76,19 +89,19 @@ test.describe("add a company by link", () => {
   test("an empty link is rejected without a request", async ({ app, api, page }) => {
     await app.open("#companies");
     await page.getByRole("button", { name: "Add company" }).click();
-    await expect(page.locator("#add-company-msg")).toHaveText("Paste a link to the company's Greenhouse, Lever or Ashby job board.");
+    await expect(page.locator("#add-company-msg")).toHaveText("Paste a link to the company's careers page or job board.");
     await expect(page.locator("#add-company-msg")).toHaveClass(/error/);
-    await expect(page.getByLabel("Job board link")).toBeFocused();
+    await expect(page.getByLabel("Careers page or job board link")).toBeFocused();
     expect(api.calls("POST", "/api/companies")).toHaveLength(0);
-    await page.getByLabel("Job board link").fill("ab");
+    await page.getByLabel("Careers page or job board link").fill("ab");
     await page.getByRole("button", { name: "Add company" }).click();
-    await expect(page.locator("#add-company-msg")).toHaveText("Paste a link to the company's Greenhouse, Lever or Ashby job board.");
+    await expect(page.locator("#add-company-msg")).toHaveText("Paste a link to the company's careers page or job board.");
     expect(api.calls("POST", "/api/companies")).toHaveLength(0);
   });
 
   test("adds the board, reports what it found and reloads", async ({ app, api, page }) => {
     await app.open("#companies");
-    await page.getByLabel("Job board link").fill("  jobs.lever.co/brightpath ");
+    await page.getByLabel("Careers page or job board link").fill("  jobs.lever.co/brightpath ");
     await page.getByLabel("Name (optional)").fill("Brightpath");
     const release = api.hold("POST", "/api/companies");
     await page.getByRole("button", { name: "Add company" }).click();
@@ -97,23 +110,23 @@ test.describe("add a company by link", () => {
     await expect(page.locator("#add-company-msg")).toHaveText("Added Brightpath: 2 matching internships out of 14 open jobs.");
     await expect(page.locator("#add-company-msg")).toHaveClass(/ok/);
     expect(api.last("POST", "/api/companies")?.body).toEqual({ url: "jobs.lever.co/brightpath", name: "Brightpath" });
-    await expect(page.getByLabel("Job board link")).toHaveValue("");
+    await expect(page.getByLabel("Careers page or job board link")).toHaveValue("");
     await expect(page.getByRole("button", { name: "Add company" })).toBeEnabled();
     await expect(rows(page).locator(".c-name a")).toContainText(["Brightpath"]);
   });
 
   test("a blank name is sent as null, and server errors show under the form", async ({ app, api, page }) => {
-    api.on("POST", "/api/companies", detail(422, "Paste a Greenhouse, Lever or Ashby link, like jobs.lever.co/company."));
+    api.on("POST", "/api/companies", detail(422, "Couldn't find a job board on that page. Open one of the company's job postings and paste its link instead."));
     await app.open("#companies");
-    await page.getByLabel("Job board link").fill("example.com/careers");
+    await page.getByLabel("Careers page or job board link").fill("example.com/careers");
     await page.getByRole("button", { name: "Add company" }).click();
-    await expect(page.locator("#add-company-msg")).toHaveText("Paste a Greenhouse, Lever or Ashby link, like jobs.lever.co/company.");
+    await expect(page.locator("#add-company-msg")).toHaveText("Couldn't find a job board on that page. Open one of the company's job postings and paste its link instead.");
     await expect(page.locator("#add-company")).toHaveClass(/invalid/);
     await expect(app.toast()).toBeHidden(); // quiet: shown in the form only
     expect(api.last("POST", "/api/companies")?.body).toEqual({ url: "example.com/careers", name: null });
 
     api.on("POST", "/api/companies", detail(404, "No Lever job board called “nobody” exists."));
-    await page.getByLabel("Job board link").fill("jobs.lever.co/nobody");
+    await page.getByLabel("Careers page or job board link").fill("jobs.lever.co/nobody");
     await page.getByRole("button", { name: "Add company" }).click();
     await expect(page.locator("#add-company-msg")).toHaveText("No Lever job board called “nobody” exists.");
   });

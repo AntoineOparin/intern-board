@@ -1,9 +1,14 @@
 // Response and request shapes of the FastAPI backend (board/*.py). Timestamps are Unix seconds.
 
 export type Region = "US" | "CA" | "REMOTE";
-export type Source = "simplify" | "board" | "negarprh" | "michelleokolie" | "zapply";
+export type Source = "simplify" | "board" | "negarprh" | "michelleokolie" | "frogg" | "zapply";
 export type Sort = "posted" | "added" | "company" | "match";
 export type Status = "saved" | "applied" | "interviewing" | "offer" | "rejected";
+/** The sponsorship filter: says it sponsors; that or Zapply's estimate; or all but the ones that rule it out. */
+export type SponsorshipFilter = "offers" | "likely" | "open";
+/** Sponsorship values, in SimplifyJobs' words (board/visa.py). "May Offer…" is Zapply's estimate. */
+export type Sponsorship = "Offers Sponsorship" | "May Offer Sponsorship" | "Does Not Offer Sponsorship"
+  | "U.S. Citizenship is Required";
 
 // ---------- listings and meta (main.py) ----------
 
@@ -18,7 +23,9 @@ export interface Listing {
   category: string | null;
   terms: string[];
   degrees: string[];
-  sponsorship: string | null;
+  sponsorship: Sponsorship | null;
+  /** Where the sponsorship value came from: the posting's own sentence, or the source list. */
+  sponsorship_note: string | null;
   date_posted: number | null;
   first_seen: number;
   active: number;
@@ -42,6 +49,7 @@ export interface ListingQuery {
   term?: string;
   degree?: string;
   source?: Source | "";
+  sponsorship?: SponsorshipFilter | "";
   since?: number;
   hide_tracked?: boolean;
   sort?: Sort;
@@ -63,6 +71,7 @@ export interface Meta {
   terms: Count[];
   degrees: Count[];
   sources: Count<Source>[];
+  sponsorship: Count<Sponsorship | null>[];
   boards: { total: number; enabled: number | null; hiring: number | null };
 }
 
@@ -91,7 +100,8 @@ export interface TrackerItem {
   regions: Region[];
   degrees: string[];
   category: string | null;
-  sponsorship: string | null;
+  sponsorship: Sponsorship | null;
+  sponsorship_note: string | null;
   first_seen: number;
 }
 
@@ -109,8 +119,11 @@ export interface TrackerUpdate {
 
 // ---------- companies (main.py) ----------
 
+export type Platform = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters" | "workable" | "bamboohr"
+  | "rippling" | "breezy" | "recruiterbox";
+
 export interface Company {
-  platform: "greenhouse" | "lever" | "ashby";
+  platform: Platform;
   token: string;
   name: string;
   enabled: number;

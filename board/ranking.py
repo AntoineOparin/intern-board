@@ -362,7 +362,8 @@ def _candidates(conn, p: dict, limit: int, region: str = "", category: str = "")
         where.append("l.category = ?")
         args.append(category)
     return conn.execute(
-        "SELECT l.id, l.company, l.title, l.locations, l.category, l.terms, l.degrees, l.sponsorship, m.score "
+        "SELECT l.id, l.company, l.title, l.locations, l.category, l.terms, l.degrees, "
+        "COALESCE(l.visa, l.sponsorship) AS sponsorship, m.score "  # the posting's own words first
         "FROM listings l JOIN matches m ON m.listing_id = l.id AND m.profile_version = ? "
         f"WHERE {' AND '.join(where)} ORDER BY m.score DESC, l.date_posted DESC LIMIT ?",
         [*args, limit]).fetchall()

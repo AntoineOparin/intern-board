@@ -32,7 +32,7 @@ function query(offset: number) {
   return {
     offset, limit: PAGE, sort: f.sort,
     q: f.q.trim() || undefined, region: f.region || undefined, category: f.category || undefined, term: f.term || undefined,
-    degree: f.degree || undefined, source: f.source || undefined,
+    degree: f.degree || undefined, source: f.source || undefined, sponsorship: f.sponsorship || undefined,
     since: f.new_only ? board.prevVisit : undefined, hide_tracked: f.hide_tracked || undefined,
   };
 }
@@ -120,7 +120,7 @@ async function waitForRunningRefresh(before: { last_refresh: number; last_error:
 export async function refreshNow(reloadCompanies?: () => Promise<unknown>) {
   board.refreshing = true;
   const before = { last_refresh: meta.data?.last_refresh ?? 0, last_error: meta.data?.last_error ?? "" };
-  board.refreshResult = { text: "Checking every source, about 30–60 seconds.", cls: "muted" };
+  board.refreshResult = { text: "Checking every source, about 1–2 minutes.", cls: "muted" };
   board.syncOverride = { kind: "busy", text: "Checking sources…" };
   try {
     const r = await api.refresh();

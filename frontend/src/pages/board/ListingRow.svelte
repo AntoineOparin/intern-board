@@ -13,6 +13,7 @@
   const SOURCE_LABELS: Record<string, [string, string]> = {
     negarprh: ["Canadian Tech Internships", "https://github.com/negarprh/Canadian-Tech-Internships-2027"],
     michelleokolie: ["Canada Tech Internships", "https://github.com/michelleokolie/canada-tech-internships-summer-2027"],
+    frogg: ["Frogg Canadian Internships", "https://github.com/seun-ipaye/frogg-canadian-internships"],
     zapply: ["Zapply", "https://github.com/zapplyjobs/Internships-2027"],
   };
 
@@ -24,6 +25,14 @@
   const t = $derived(l.match_score == null ? null : tier(l.match_score));
   const by = $derived(l.match_method === "claude" ? "Claude" : "keyword match");
   const whyOpen = $derived(why.has(l.id));
+  // Sponsorship, in plain words; the tooltip says where it came from.
+  const VISA: Record<string, { text: string; cls: string }> = {
+    "Offers Sponsorship": { text: "Offers sponsorship", cls: "ok" },
+    "May Offer Sponsorship": { text: "May sponsor", cls: "maybe" },
+    "Does Not Offer Sponsorship": { text: "No sponsorship", cls: "warn" },
+    "U.S. Citizenship is Required": { text: "US citizens only", cls: "warn" },
+  };
+  const visa = $derived(l.sponsorship ? VISA[l.sponsorship] : undefined);
 
   let tracking = $state(false);
   async function track() {
@@ -55,7 +64,7 @@
       <span class="loc" title={locs.join("\n")}>{locText}</span>
       {#if l.category}<span class="tag">{l.category}</span>{/if}
       {#each l.terms as term (term)}<span class="tag">{term}</span>{/each}
-      {#if l.sponsorship && l.sponsorship !== "Other"}<span class="tag warn">{l.sponsorship}</span>{/if}
+      {#if visa}<span class="tag {visa.cls}" title={l.sponsorship_note ?? undefined}>{visa.text}</span>{/if}
       <span class="age">{ago(l.date_posted)}</span>
       {#if t && l.match_score != null}
         <button type="button" class="match-badge {t}" data-match-why aria-expanded={whyOpen} onclick={toggleWhy}

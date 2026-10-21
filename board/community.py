@@ -26,6 +26,13 @@ SOURCES = {
         "repo": "https://github.com/michelleokolie/canada-tech-internships-summer-2027",
         "url": "https://raw.githubusercontent.com/michelleokolie/canada-tech-internships-summer-2027/main/.github/scripts/listings.json",
     },
+    "frogg": {
+        # Canada only, refreshed every 30 minutes, about 40 Montreal internships at a time. No license
+        # file: we link to each posting and credit the repository, as for the lists above.
+        "label": "Frogg Canadian Internships",
+        "repo": "https://github.com/seun-ipaye/frogg-canadian-internships",
+        "url": "https://raw.githubusercontent.com/seun-ipaye/frogg-canadian-internships/main/listings.json",
+    },
     "zapply": {
         # Reuse terms: credit Zapply and link back to the repository (see its README, "Data & Reuse").
         "label": "Zapply",
@@ -36,8 +43,8 @@ SOURCES = {
 
 ZAPPLY_SECTIONS = {"Software Engineering", "Data Science & AI", "Hardware & Engineering",
                    "Product, Design & Research"}
-_SEASON = r"(?:Summer|Fall|Winter|Spring)"
-# "Summer 2027", and "Summer/Fall 2027" -> both terms.
+_SEASON = ats.SEASON
+# "Summer 2027", "Été 2027", and "Summer/Fall 2027" -> both terms.
 TERM_IN_TITLE = re.compile(rf"\b({_SEASON}(?:\s*[/&,]\s*{_SEASON}|\s+(?:and|or)\s+{_SEASON})*)\s*(20\d\d)", re.I)
 
 
@@ -74,7 +81,7 @@ def _terms(title: str) -> list[str]:
     seen = []
     for seasons, year in TERM_IN_TITLE.findall(title):
         for season in re.findall(_SEASON, seasons, re.I):
-            term = f"{season.title()} {year}"
+            term = f"{ats.season_name(season)} {year}"
             if term not in seen:
                 seen.append(term)
     return seen
@@ -151,6 +158,28 @@ def parse_michelleokolie(raw: str) -> list[dict]:
     return listings
 
 
+# ---------- frogg: JSON array ----------
+
+def parse_frogg(raw: str) -> list[dict]:
+    listings = []
+    for item in json.loads(raw):
+        if item.get("status") != "open":
+            continue
+        title, url = item.get("role") or "", item.get("link") or ""
+        term = item.get("term") or ""
+        try:
+            date = int(datetime.strptime(item.get("date_posted") or "", "%Y-%m-%d").timestamp())
+        except ValueError:
+            date = None
+        locs = [p.strip() for p in re.split(r"\s*[;|]\s*", item.get("location") or "") if p.strip()]
+        listing = _listing("frogg", id=_id("frogg", url.split("?")[0]), company=item.get("company") or "",
+                           title=title, url=url, locations=locs, date_posted=date,
+                           terms=_terms(title) or _terms(term))
+        if listing:
+            listings.append(listing)
+    return listings
+
+
 # ---------- zapply: README tables, one per category ----------
 
 _AGE = {"m": 60, "h": 3600, "d": 86400, "w": 7 * 86400, "mo": 30 * 86400}
@@ -203,13 +232,15 @@ def parse_zapply(md: str, now: int | None = None) -> list[dict]:
             continue
         listing = _listing("zapply", id=_id("zapply", url.split("?")[0]), company=company, title=role, url=url,
                            locations=zapply_location(location), date_posted=_zapply_age(posted, now),
-                           category=category, sponsorship="Offers Sponsorship" if "Sponsor" in visa else None)
+                           # Zapply's visa column is its estimate, not what the employer says.
+                           category=category, sponsorship="May Offer Sponsorship" if "Sponsor" in visa else None)
         if listing:
             listings.append(listing)
     return listings
 
 
-PARSERS = {"negarprh": parse_negarprh, "michelleokolie": parse_michelleokolie, "zapply": parse_zapply}
+PARSERS = {"negarprh": parse_negarprh, "michelleokolie": parse_michelleokolie, "frogg": parse_frogg,
+           "zapply": parse_zapply}
 
 
 def fetch(source: str) -> list[dict]:

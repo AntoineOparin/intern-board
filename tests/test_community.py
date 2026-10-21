@@ -50,7 +50,7 @@ class CommunityTest(unittest.TestCase):
         # Marketing isn't tech; "Business & Operations" isn't a tech section.
         self.assertEqual([r["company"] for r in rows], ["RTX"])
         self.assertEqual(rows[0]["locations"], "Cedar Rapids, IA")
-        self.assertEqual(rows[0]["sponsorship"], "Offers Sponsorship")
+        self.assertEqual(rows[0]["sponsorship"], "May Offer Sponsorship")  # an estimate, not the employer's word
         self.assertEqual(rows[0]["date_posted"], (now - 2 * 86400) // 3600 * 3600)
 
     def test_zapply_locations(self):
@@ -70,6 +70,20 @@ class CommunityTest(unittest.TestCase):
         rows = community.parse_michelleokolie(raw)
         self.assertEqual([r["id"] for r in rows], ["michelleokolie:a"])
         self.assertEqual(rows[0]["terms"], ",Summer 2027,")
+
+    def test_frogg(self):
+        raw = json.dumps([
+            {"company": "CAE", "role": "Stagiaire - Développeur Full Stack", "location": "Montréal, QC, Canada",
+             "term": "Winter 2027", "status": "open", "date_posted": "2026-10-20",
+             "link": "https://cae.wd3.myworkdayjobs.com/career/job/Montreal/Stagiaire_123?source=frogg"},
+            {"company": "Old Co", "role": "Software Intern", "location": "Toronto, ON", "term": "Summer 2027",
+             "status": "closed", "date_posted": "2026-09-01", "link": "https://example.com/1"},
+        ])
+        rows = community.parse_frogg(raw)
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual((row["company"], row["regions"], row["category"], row["terms"], row["posting_key"]),
+                         ("CAE", ",CA,", "Software", ",Winter 2027,", "wd:cae:123"))
 
     def test_name_key(self):
         self.assertEqual(community.name_key("Shopify Inc.", "Software Engineer Intern (Summer 2027)"),

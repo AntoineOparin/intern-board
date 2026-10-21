@@ -1,6 +1,8 @@
 import sqlite3
 from pathlib import Path
 
+from .locations import fold
+
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "board.db"
 
 SCHEMA = """
@@ -36,13 +38,13 @@ CREATE TABLE IF NOT EXISTS meta (
     value TEXT
 );
 
--- Company job boards (Greenhouse / Lever / Ashby) read directly.
+-- Company job boards read directly (board/ats.py lists the platforms).
 CREATE TABLE IF NOT EXISTS companies (
     platform      TEXT NOT NULL,
     token         TEXT NOT NULL,
     name          TEXT NOT NULL,
     enabled       INTEGER NOT NULL DEFAULT 1,
-    origin        TEXT NOT NULL,     -- 'auto' (found in the community list) or 'manual'
+    origin        TEXT NOT NULL,     -- 'auto' (found in a community list or board/montreal.py) or 'manual'
     added_at      INTEGER NOT NULL,
     last_checked  INTEGER,
     last_status   TEXT,              -- 'ok', 'not_found', 'error'
@@ -150,6 +152,11 @@ MIGRATIONS = {
     "listings": {
         "posting_key": "TEXT",  # e.g. "gh:12345": the same job from two sources shares it
         "board": "TEXT",        # "<platform>:<token>" for listings read from a company board
+        # What the posting itself says about US visa sponsorship (board/visa.py), in the same words
+        # as `sponsorship`; NULL if it says nothing. `sponsorship` is the source list's own field.
+        "visa": "TEXT",
+        "visa_quote": "TEXT",   # the sentence it came from
+        "visa_checked": "INTEGER",  # when the posting was read; NULL = not yet
     },
     "companies": {
         "interns": "INTEGER",   # matching internships found on the last successful check
@@ -178,6 +185,8 @@ def connect() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
+    # fold(text): lower case without accents, so a search for "montreal" finds "Montréal".
+    conn.create_function("fold", 1, lambda t: fold(t) if t else t, deterministic=True)
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -193,6 +202,7 @@ def init() -> None:
                     conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
         conn.execute("CREATE INDEX IF NOT EXISTS listings_board ON listings (board)")
         conn.execute("CREATE INDEX IF NOT EXISTS listings_posting_key ON listings (posting_key)")
+        conn.execute("CREATE INDEX IF NOT EXISTS listings_visa_pending ON listings (visa_checked, active)")
         conn.execute("UPDATE contacts SET email_found_at = found_at WHERE email IS NOT NULL AND email_found_at IS NULL")
         # Older versions dated late-discovered postings by discovery time; date them by posting.
         if not get_meta(conn, "fix_first_seen_v1"):
