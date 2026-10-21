@@ -112,6 +112,13 @@ def entry_key(section: str, e: dict) -> tuple:
     return (_text_key(e.get("name")),)
 
 
+def _blank(section: str, e: dict) -> bool:
+    """An entry the editor added and never filled in: no text anywhere and no points."""
+    fields = ("organization", "role", "location", "start", "end") if section == "experience" else ("name", "link", "date")
+    return (not any(str(e.get(k) or "").strip() for k in fields) and not any(str(t).strip() for t in e.get("tech") or [])
+            and not e["points"])
+
+
 def _normalize_entry(section: str, entry: dict, taken_ids: set[str]) -> dict:
     e = dict(entry)
     points, keys, ids = [], set(), set()
@@ -162,7 +169,8 @@ def normalize(data) -> dict:
             continue
         entries = data.get(section) if isinstance(data.get(section), list) else []
         taken: set[str] = set()
-        data[section] = [_normalize_entry(section, e, taken) for e in entries if isinstance(e, dict)]
+        normalized = [_normalize_entry(section, e, taken) for e in entries if isinstance(e, dict)]
+        data[section] = [e for e in normalized if not _blank(section, e)]
     return data
 
 

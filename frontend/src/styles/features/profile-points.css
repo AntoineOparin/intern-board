@@ -2,8 +2,12 @@
 
 .points-panel { margin-top: 20px; }
 .pe-lede { margin: -8px 0 0; font-size: 13.5px; max-width: 70ch; }
-.pe-section { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
-.pe-section + .pe-entry { margin-top: -6px; }
+.pe-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.pe-section { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.pe-section-head + .pe-entry, .pe-section-head + .pe-empty { margin-top: -6px; }
+.pe-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.pe-details .field input { height: 32px; font-size: 13.5px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.pe-details .pe-wide { grid-column: span 2; }
 .pe-entry { border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); display: grid; gap: 10px; padding: 14px 16px; }
 .pe-entry-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pe-entry-head > div:first-child { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }

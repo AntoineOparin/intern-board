@@ -35,6 +35,16 @@ export function withPoints(data: ProfileData): ProfileData {
   return copy;
 }
 
+/** A blank entry with one empty point, for the Add experience / Add project buttons. */
+export function newEntry(section: Section): Entry {
+  const base = { points: [{ id: newId("p"), phrasings: [""] }], missing_from_resume: false };
+  if (section === "experience") return { id: newId("e"), organization: "", role: "", location: "", start: "", end: "", ...base };
+  return { id: newId("j"), name: "", tech: [], link: "", date: "", ...base };
+}
+
+/** "Go, SQLite" -> ["Go", "SQLite"], for the project tech field. */
+export const splitList = (s: string) => s.split(",").map(t => t.trim()).filter(Boolean);
+
 export function entryTitle(section: Section, entry: Entry): string {
   if (section === "experience") {
     const e = entry as ExperienceEntry;

@@ -42,6 +42,18 @@ class NormalizeTest(unittest.TestCase):
         self.assertEqual(profile.normalize("nope"), {})
         self.assertEqual(profile.normalize({"name": "x"}), {"name": "x"})
 
+    def test_entries_added_but_never_filled_in_are_dropped(self):
+        data = profile.normalize({
+            "experience": [{"organization": "", "role": "", "location": "", "start": "", "end": "", "points": [{"phrasings": [" "]}]},
+                           {"organization": "", "role": "", "location": "", "start": "", "end": "", "points": [{"phrasings": ["Did a thing."]}]},
+                           {"organization": "Acme", "role": "", "location": "", "start": "", "end": "", "points": []}],
+            "projects": [{"name": "", "tech": [], "link": "", "date": "", "bullets": []},
+                         {"name": "", "tech": ["Go"], "link": "", "date": "", "points": []}],
+        })
+        self.assertEqual([e["points"][0]["phrasings"] if e["points"] else e["organization"] for e in data["experience"]],
+                         [["Did a thing."], "Acme"])
+        self.assertEqual([p["tech"] for p in data["projects"]], [["Go"]])
+
     def test_points_keep_ids_and_absorb_stray_bullets(self):
         entry = {"organization": "Acme", "role": "Dev", "id": "e-1",
                  "points": [{"id": "p-1", "phrasings": ["Cut  report time from 14s to 2s.", "  ", "Cut report time from 14s to 2s"]},

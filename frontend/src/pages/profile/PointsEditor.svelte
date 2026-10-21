@@ -6,12 +6,13 @@
   import Icon from "../../lib/components/Icon.svelte";
   import * as api from "../../lib/api";
   import { profile, editor, suggestions, suggestPhrasings } from "../../lib/stores/profile.svelte";
-  import { MAX_PHRASINGS, SECTIONS, entryTitle, newId, withPoints, type Entry, type Section } from "../../lib/points";
-  import type { Point, Profile, ProfileData } from "../../lib/types";
+  import { MAX_PHRASINGS, SECTIONS, entryTitle, newEntry, newId, splitList, withPoints, type Entry, type Section } from "../../lib/points";
+  import type { ExperienceEntry, Point, Profile, ProfileData, ProjectEntry } from "../../lib/types";
 
   let saving = $state(false);
   let msg = $state({ text: "", kind: "" });
   let shown = ""; // the profile version the draft was built from
+  let detailsOpen = $state(new Set<string>()); // entries whose facts form is open (new ones start open)
 
   // A fresh profile replaces the draft, unless there are unsaved edits to protect.
   $effect(() => {
@@ -72,6 +73,22 @@
     touch();
   }
 
+  // ---------- entries ----------
+  function addEntry(section: Section) {
+    if (!editor.draft) return;
+    const entry = newEntry(section);
+    ((editor.draft[section] ??= []) as Entry[]).push(entry);
+    toggleDetails(entry.id, true);
+    touch();
+  }
+  function toggleDetails(id: string, open = !detailsOpen.has(id)) {
+    const next = new Set(detailsOpen);
+    if (open) next.add(id); else next.delete(id);
+    detailsOpen = next;
+  }
+  const exp = (entry: Entry) => entry as ExperienceEntry;
+  const proj = (entry: Entry) => entry as ProjectEntry;
+
   // ---------- suggestions ----------
   // Claude reads the saved profile, so unsaved edits are saved first (the click covers both).
   async function suggest(point: Point) {
@@ -97,10 +114,14 @@
   {#if editor.draft}
     {#each SECTIONS as [section, label] (section)}
       {@const entries = editor.draft[section] ?? []}
-      <h3 class="pe-section">{label}</h3>
+      <div class="pe-section-head">
+        <h3 class="pe-section">{label}</h3>
+        <button type="button" class="btn btn-quiet pe-small" onclick={() => addEntry(section)}>{section === "experience" ? "Add experience" : "Add project"}</button>
+      </div>
       {#if !entries.length}<p class="muted pe-empty">None in your profile.</p>{/if}
       {#each entries as entry, ei (entry.id)}
         {@const title = entryTitle(section, entry)}
+        {@const open = detailsOpen.has(entry.id)}
         <article class="pe-entry" aria-label={title}>
           <header class="pe-entry-head">
             <div>
@@ -108,10 +129,30 @@
               {#if entry.missing_from_resume}<span class="tag warn">Not on your latest resume</span>{/if}
             </div>
             <div class="pe-actions">
+              <button type="button" class="btn btn-quiet pe-small" aria-expanded={open} onclick={() => toggleDetails(entry.id)}>{open ? "Hide details" : "Edit details"}</button>
               <button type="button" class="btn btn-quiet pe-small" onclick={() => addPoint(entry)}>Add point</button>
               <button type="button" class="btn btn-danger-quiet pe-small" onclick={() => removeEntry(section, ei)}>Remove entry</button>
             </div>
           </header>
+          {#if open}
+            <div class="pe-details">
+              {#if section === "experience"}
+                {@const e = exp(entry)}
+                <label class="field"><span>Organization</span><input bind:value={e.organization} oninput={touch} placeholder="Harbourview Labs"></label>
+                <label class="field"><span>Role</span><input bind:value={e.role} oninput={touch} placeholder="Software Developer Intern"></label>
+                <label class="field"><span>Location</span><input bind:value={e.location} oninput={touch} placeholder="Toronto, ON"></label>
+                <label class="field"><span>Start</span><input bind:value={e.start} oninput={touch} placeholder="May 2025"></label>
+                <label class="field"><span>End</span><input bind:value={e.end} oninput={touch} placeholder="Aug 2025 or Present"></label>
+              {:else}
+                {@const p = proj(entry)}
+                <label class="field"><span>Name</span><input bind:value={p.name} oninput={touch} placeholder="Trailmap"></label>
+                <label class="field pe-wide"><span>Tech <em>(comma-separated)</em></span>
+                  <input value={p.tech.join(", ")} oninput={touch} onchange={e => { p.tech = splitList(e.currentTarget.value); }} placeholder="TypeScript, Go"></label>
+                <label class="field"><span>Link</span><input bind:value={p.link} oninput={touch} placeholder="github.com/you/trailmap"></label>
+                <label class="field"><span>Date</span><input bind:value={p.date} oninput={touch} placeholder="2024"></label>
+              {/if}
+            </div>
+          {/if}
           {#if !entry.points.length}<p class="muted pe-empty">No points yet. Add one so tailoring has something to pick from.</p>{/if}
           <ol class="pe-points">
             {#each entry.points as point, pi (point.id)}

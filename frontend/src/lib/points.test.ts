@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entryTitle, indexPoints, pointsOf, swapOptions, withPoints } from "./points";
+import { entryTitle, indexPoints, newEntry, pointsOf, splitList, swapOptions, withPoints } from "./points";
 import type { ProfileData, ResumeEntry } from "./types";
 import profileFixture from "../../../e2e/fixtures/profile.json";
 
@@ -26,6 +26,18 @@ describe("pointsOf and withPoints", () => {
     expect(out.experience![0].missing_from_resume).toBe(false);
     expect(out.projects![0]).toMatchObject({ id: "j-keep", points: [{ id: "p-1", phrasings: ["Built P."] }] });
     expect(data.experience![0]).toHaveProperty("bullets"); // the input is untouched
+  });
+
+  it("makes blank entries with one empty point, and splits tech lists", () => {
+    const e = newEntry("experience");
+    expect(e.id).toMatch(/^e-/);
+    expect(e).toMatchObject({ organization: "", role: "", location: "", start: "", end: "", missing_from_resume: false });
+    expect(e.points).toHaveLength(1);
+    expect(e.points[0].phrasings).toEqual([""]);
+    const p = newEntry("projects");
+    expect(p.id).toMatch(/^j-/);
+    expect(p).toMatchObject({ name: "", tech: [], link: "", date: "" });
+    expect(splitList(" Go, SQLite,, ")).toEqual(["Go", "SQLite"]);
   });
 
   it("titles entries", () => {

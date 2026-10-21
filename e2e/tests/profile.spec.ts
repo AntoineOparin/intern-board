@@ -182,6 +182,51 @@ test.describe("points", () => {
     await expect(point.locator(".pe-suggest")).toHaveCount(0);
   });
 
+  test("experiences and projects can be added, with their details and a first point", async ({ app, api, page }) => {
+    await app.open("#profile");
+    const ed = page.locator("#points-editor");
+    await ed.getByRole("button", { name: "Add project" }).click();
+    const project = ed.getByRole("article").nth(2);
+    await expect(project).toHaveAccessibleName("Untitled project");
+    await expect(project.getByRole("button", { name: "Hide details" })).toBeVisible(); // new entries open their details
+    await project.getByLabel("Name").fill("Pantry");
+    await project.getByLabel("Tech (comma-separated)").fill("Python, SQLite");
+    await project.getByLabel("Date").fill("2026");
+    await expect(project).toHaveAccessibleName("Pantry");
+    await project.getByRole("textbox", { name: "Phrasing 1 of point 1, Pantry" }).fill("Built a meal planner that tracks 40 recipes.");
+    await project.getByRole("button", { name: "Hide details" }).click();
+    await expect(project.getByLabel("Name")).toHaveCount(0);
+
+    await ed.getByRole("button", { name: "Add experience" }).click();
+    const role = ed.getByRole("article").nth(1);
+    await expect(role).toHaveAccessibleName("Untitled role");
+    await role.getByLabel("Organization").fill("Northfield Robotics Club");
+    await role.getByLabel("Role").fill("Firmware Lead");
+    await role.getByLabel("Start").fill("Sep 2025");
+    await role.getByLabel("End").fill("Present");
+    await expect(role).toHaveAccessibleName("Firmware Lead · Northfield Robotics Club");
+    await role.getByRole("textbox", { name: "Phrasing 1 of point 1, Firmware Lead · Northfield Robotics Club" }).fill("Led firmware for a 6-person team.");
+
+    // Existing entries can be edited the same way.
+    const first = ed.getByRole("article").nth(0);
+    await first.getByRole("button", { name: "Edit details" }).click();
+    await expect(first.getByLabel("Organization")).toHaveValue("Harbourview Labs");
+    await first.getByLabel("Location").fill("Toronto, ON (remote)");
+
+    await page.locator("#points-save").click();
+    await expect(page.locator("#points-msg")).toHaveText("Saved.");
+    const sent = api.last("PUT", "/api/profile")?.body.data;
+    expect(sent.experience.map((e: any) => [e.organization, e.role, e.start, e.end, e.location])).toEqual([
+      ["Harbourview Labs", "Software Developer Intern", "May 2025", "Aug 2025", "Toronto, ON (remote)"],
+      ["Northfield Robotics Club", "Firmware Lead", "Sep 2025", "Present", ""],
+    ]);
+    expect(sent.experience[1].id).toMatch(/^e-/);
+    expect(sent.experience[1].points[0].phrasings).toEqual(["Led firmware for a 6-person team."]);
+    expect(sent.projects[1]).toMatchObject({ name: "Pantry", tech: ["Python", "SQLite"], date: "2026", link: "" });
+    expect(sent.projects[1].points[0].phrasings).toEqual(["Built a meal planner that tracks 40 recipes."]);
+    expect(api.jobRequests()).toHaveLength(0);
+  });
+
   test("points can be added, reordered and deleted; a removed entry asks first", async ({ app, api, page }) => {
     await app.open("#profile");
     const entry = page.locator("#points-editor").getByRole("article").nth(0);
