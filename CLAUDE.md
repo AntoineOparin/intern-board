@@ -11,7 +11,7 @@ A personal, local web app: software and tech internships in Canada and the US, a
   - `db.py`: schema and in-place migrations (`MIGRATIONS`), plus `visible()`, which hides listings older than 30 days.
   - `ai.py`: calls the local **Claude Code CLI** (`claude -p`) on the user's plan. There's no API key.
   - `jobs.py`: background AI jobs. The browser starts one and polls it.
-  - `profile.py`: resume upload and extraction, and preferences.
+  - `profile.py`: resume upload and extraction, preferences, and the points model: each experience or project bullet is a point with one or more phrasings (`normalize()` converts legacy `bullets`; `flat_data()` is what prompts other than tailoring see). A re-upload merges (`merge_profile`), `suggest_phrasings` is the job behind "Suggest variations", and `version` bumps only when facts change, never for an extra phrasing.
   - `postings.py`: full job descriptions (job-board APIs, or Claude WebFetch).
   - Features: `ranking.py`, `documents.py` (tailored resume, cover letter), `people.py` (search links, outreach job), `outreach.py` (writing chain: brief → write → check → repair), `contacts.py` (Find People via Prospeo), `prospeo.py` (API client), `settings.py` (`.env`).
 - **Frontend:** Svelte 5 + TypeScript + Vite in `frontend/`. It builds into `board/static/`, which FastAPI serves at `/`. The build is committed so `./run.sh` needs only Python. **Never edit `board/static/` by hand**; it's overwritten by every build.
