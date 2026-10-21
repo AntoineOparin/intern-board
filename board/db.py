@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS profile (
     resume_text      TEXT,
     data             TEXT NOT NULL DEFAULT '{}',  -- JSON, see board/profile.py PROFILE_SCHEMA
     preferences      TEXT NOT NULL DEFAULT '{}',  -- JSON, set by you on the Profile tab
-    version          INTEGER NOT NULL DEFAULT 0,  -- bumped on every change; caches key on it
+    version          INTEGER NOT NULL DEFAULT 0,  -- bumped when facts change (not for extra phrasings); caches key on it
     updated_at       INTEGER
 );
 

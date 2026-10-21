@@ -1,15 +1,17 @@
 """Tailored resumes and cover letters for a listing, written by Claude from your profile.
 
-Claude only chooses, orders and rewords. Facts that must not drift (names, employers, roles,
-dates, schools, links) are copied from the profile by the server, skills are limited to the
-ones the profile lists, and every number in the generated text is checked against the profile.
+For a resume Claude only chooses and orders: it picks points and phrasings from the profile by
+number and the server copies the text verbatim (at most one phrasing per point). Names, employers,
+roles, dates, schools and links are copied from the profile too, skills are limited to the ones
+the profile lists, and every number in generated text is checked against the profile.
 
 Content JSON stored in `documents.content`:
 
   resume:       {header: {name, contact[], links[{label, url}]},
                  education[{school, degree, location, dates, details[]}],
-                 experience[{organization, role, location, dates, bullets[]}],
-                 projects[{name, tech, link, dates, bullets[]}],
+                 experience[{source_id, organization, role, location, dates, bullets[],
+                             refs[{point_id, phrasing} | null]}],   -- refs[i] says where bullets[i] came from
+                 projects[{source_id, name, tech, link, dates, bullets[], refs[]}],
                  skills[{label, items[]}],
                  awards[],
                  notes: {emphasized[], gaps[], description_used, checks[]}}
@@ -27,7 +29,7 @@ from datetime import date
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from . import ai, db, jobs, postings, profile
+from . import ai, db, honesty, jobs, postings, profile
 
 router = APIRouter()
 
@@ -45,13 +47,18 @@ def _obj(props: dict) -> dict:
     return {"type": "object", "additionalProperties": False, "required": list(props), "properties": props}
 
 
+_picks = {"type": "array",
+          "description": "Bullets in order: the point, and the phrasing of it that fits this job best. "
+                         "At most one pick per point.",
+          "items": _obj({"point": {"type": "integer"}, "phrasing": {"type": "integer"}})}
+
 RESUME_SCHEMA = _obj({
     "experience": {"type": "array", "description": "Roles to include, most relevant first or reverse-chronological.",
                    "items": _obj({"source_index": {"type": "integer", "description": "Index into profile.experience."},
-                                  "bullets": _strs})},
+                                  "picks": _picks})},
     "projects": {"type": "array", "description": "The 2-3 most relevant projects.",
                  "items": _obj({"source_index": {"type": "integer", "description": "Index into profile.projects."},
-                                "bullets": _strs})},
+                                "picks": _picks})},
     "skills": {"type": "array", "description": "Skill groups, most relevant first.",
                "items": _obj({"label": _str, "items": _strs})},
     "notes": _obj({
@@ -79,7 +86,7 @@ TONE_GUIDE = {
                     "not adjectives or exclamation marks.",
 }
 
-BANNED = ("i am writing to express", "passionate", "leverage", "synergy", "dynamic", "cutting-edge")
+BANNED = honesty.BANNED
 # Relative dates go wrong easily ("last summer" for a job two summers ago); dates should be as written.
 RELATIVE = ("last summer", "this summer", "last fall", "this fall", "last winter", "this winter", "last spring",
             "this spring", "last year", "this year", "recently", "currently")
@@ -126,16 +133,9 @@ def _header(data: dict) -> dict:
     return {"name": data.get("name", ""), "contact": contact, "links": links}
 
 
-def _numbers(text: str) -> set[str]:
-    return {m.rstrip(".,") for m in re.findall(r"\d[\d,.]*", text)}
-
-
-def _unverified_numbers(texts: list[str], source: str) -> list[str]:
-    known = _numbers(source)
-    found = set()
-    for t in texts:
-        found |= _numbers(t)
-    return sorted(n for n in found if n not in known)
+_numbers = honesty.numbers
+_unverified_numbers = honesty.unverified_numbers
+_clean = honesty.clean
 
 
 def _checks(texts: list[str], source: str) -> list[str]:
@@ -153,18 +153,41 @@ def _checks(texts: list[str], source: str) -> list[str]:
     return checks
 
 
-def _clean(items, limit=None) -> list[str]:
-    out = [re.sub(r"\s+", " ", str(s)).strip() for s in items or []]
-    out = [s for s in out if s]
-    return out[:limit] if limit else out
-
-
 def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9+#]", "", s.lower())
 
 
+def _resolve(entry: dict, picks) -> tuple[list[str], list[dict]]:
+    """Verbatim bullets for Claude's picks: (texts, refs), at most one phrasing per point.
+
+    Bad or missing picks fall back to the entry's first points, each in its primary phrasing.
+    """
+    points = entry.get("points") or []
+    used, texts, refs = set(), [], []
+    for pk in picks if isinstance(picks, list) else []:
+        if not isinstance(pk, dict):
+            continue
+        i, j = pk.get("point"), pk.get("phrasing")
+        if not isinstance(i, int) or not 0 <= i < len(points) or i in used:
+            continue
+        phrasings = points[i]["phrasings"]
+        if not isinstance(j, int) or not 0 <= j < len(phrasings):
+            j = 0
+        used.add(i)
+        texts.append(phrasings[j])
+        refs.append({"point_id": points[i]["id"], "phrasing": j})
+        if len(texts) == MAX_BULLETS:
+            break
+    if not texts:
+        for pt in points[:MAX_BULLETS]:
+            texts.append(pt["phrasings"][0])
+            refs.append({"point_id": pt["id"], "phrasing": 0})
+    return texts, refs
+
+
 def build_resume(data: dict, answer: dict, description_used: bool) -> dict:
-    """Combine Claude's selections with facts copied from the profile."""
+    """Combine Claude's selections with text and facts copied from the profile."""
+    data = profile.normalize(data)
     exp_src, proj_src = data.get("experience") or [], data.get("projects") or []
 
     def pick(items, src, limit):
@@ -174,16 +197,16 @@ def build_resume(data: dict, answer: dict, description_used: bool) -> dict:
             if not isinstance(i, int) or not 0 <= i < len(src) or i in seen:
                 continue
             seen.add(i)
-            out.append((src[i], _clean(it.get("bullets"), MAX_BULLETS) or _clean(src[i].get("bullets"), MAX_BULLETS)))
+            out.append((src[i], *_resolve(src[i], it.get("picks"))))
         return out[:limit] if limit else out
 
-    experience = [{"organization": e.get("organization", ""), "role": e.get("role", ""),
+    experience = [{"source_id": e["id"], "organization": e.get("organization", ""), "role": e.get("role", ""),
                    "location": e.get("location", ""), "dates": _dates(e.get("start"), e.get("end")),
-                   "bullets": b} for e, b in pick(answer.get("experience"), exp_src, None)
+                   "bullets": b, "refs": r} for e, b, r in pick(answer.get("experience"), exp_src, None)
                   or pick([{"source_index": i} for i in range(len(exp_src))], exp_src, None)]
-    projects = [{"name": p.get("name", ""), "tech": ", ".join(p.get("tech") or []), "link": p.get("link", ""),
-                 "dates": p.get("date", ""), "bullets": b}
-                for p, b in pick(answer.get("projects"), proj_src, MAX_PROJECTS)]
+    projects = [{"source_id": p["id"], "name": p.get("name", ""), "tech": ", ".join(p.get("tech") or []),
+                 "link": p.get("link", ""), "dates": p.get("date", ""), "bullets": b, "refs": r}
+                for p, b, r in pick(answer.get("projects"), proj_src, MAX_PROJECTS)]
 
     # Skills: only ones the profile lists, in Claude's order; anything Claude skipped goes at the end.
     have = {}
@@ -253,11 +276,27 @@ def build_letter(data: dict, answer: dict, tone: str, listing: dict, description
 
 
 def _indexed(data: dict) -> str:
-    lines = ["INDEX OF PROFILE ENTRIES (use these source_index values):"]
+    """Every entry, point and phrasing with the numbers Claude picks by."""
+    lines = ["INDEX OF PROFILE POINTS. Use these source_index, point and phrasing numbers; the server inserts "
+             "the exact text of each pick."]
+
+    def points(entry):
+        for i, pt in enumerate(entry.get("points") or []):
+            for j, s in enumerate(pt["phrasings"][:profile.MAX_PHRASINGS]):
+                lines.append(f"  point {i}, phrasing {j}: {s}")
+
+    def flag(entry):
+        return " — not on the latest resume" if entry.get("missing_from_resume") else ""
+
     for i, e in enumerate(data.get("experience") or []):
-        lines.append(f"experience[{i}]: {e.get('role')} at {e.get('organization')} ({len(e.get('bullets') or [])} bullets)")
+        dates = _dates(e.get("start"), e.get("end"))
+        lines.append(f"experience[{i}]: {e.get('role')} at {e.get('organization')}" + (f" ({dates})" if dates else "")
+                     + flag(e))
+        points(e)
     for i, p in enumerate(data.get("projects") or []):
-        lines.append(f"projects[{i}]: {p.get('name')}")
+        tech = ", ".join(p.get("tech") or [])
+        lines.append(f"projects[{i}]: {p.get('name')}" + (f" — {tech}" if tech else "") + flag(p))
+        points(p)
     return "\n".join(lines)
 
 
@@ -282,23 +321,21 @@ def tailor_resume(payload: dict) -> dict:
         p = profile.require(conn)
     text = _posting_text(listing_id, payload.get("description"))
     answer = ai.ask(
-        "Tailor this candidate's resume to the job below. Return selections and rewritten bullets only; "
-        "the server copies names, employers, dates, schools and links from the profile.\n\n"
+        "Tailor this candidate's resume to the job below. Return selections only: the server copies the "
+        "chosen bullet text, names, employers, dates, schools and links from the profile.\n\n"
         "Rules:\n"
         "- It must fit on ONE page. Include every experience entry unless it is clearly irrelevant and "
-        "the page is full. Up to 3-4 bullets per role, never more bullets than the source role has. "
-        "Pick the 2-3 most relevant projects.\n"
-        "- Each bullet is one sentence of at most ~25 words (1-2 printed lines), starting with a strong "
-        "past-tense verb. Rewrite only to bring forward what this job cares about; don't add purposes, "
-        "outcomes or motivations the source bullet doesn't state.\n"
-        "- Keep every number, percentage and metric exactly as written in the profile. Never add a metric, "
-        "tool, scale or outcome that the profile doesn't state.\n"
+        "the page is full. Pick the 2-3 most relevant projects.\n"
+        "- Bullets: choose from the INDEX below by point and phrasing number. Never write bullet text. "
+        "Each point is one fact, so pick at most one phrasing per point. 3-4 picks per role, never more "
+        "than the role has points. Choose the phrasing whose emphasis best matches this job, and order "
+        "the picks most relevant first.\n"
         "- Skills: use only skills listed in the profile, grouped (e.g. Languages, Frameworks, Tools), "
         "with the ones the job asks for first.\n"
         "- notes.emphasized: 2-4 short sentences on what you prioritised and why.\n"
         "- notes.gaps: specific requirements in the posting the profile doesn't show. Be honest; an empty "
         "list only if there truly are none.\n\n"
-        f"{ai.HONESTY_RULES}\n\n{profile.as_prompt_text(p)}\n\n{_indexed(p['data'])}\n\n"
+        f"{ai.HONESTY_RULES}\n\n{profile.as_prompt_text(p, bullets=False)}\n\n{_indexed(p['data'])}\n\n"
         f"{_listing_prompt(listing, text)}",
         system="You are a careful resume editor for software internship applications. You never invent facts.",
         schema=RESUME_SCHEMA)

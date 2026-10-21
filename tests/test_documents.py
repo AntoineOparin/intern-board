@@ -15,11 +15,14 @@ PROFILE = {
     "links": [{"label": "GitHub", "url": "github.com/test"}],
     "education": [{"school": "Uni", "degree": "BASc", "field": "Computer Engineering", "location": "Waterloo, ON",
                    "start": "Sep 2024", "end": "Apr 2029", "gpa": "3.9", "details": ["Courses: OS."]}],
+    # Acme is in the legacy flat shape (load() converts it); Club already has points with two phrasings.
     "experience": [
         {"organization": "Acme", "role": "Developer Co-op", "location": "Toronto, ON", "start": "May 2025",
-         "end": "Aug 2025", "bullets": ["Cut report time from 14s to 2s.", "Raised coverage to 85%."]},
-        {"organization": "Club", "role": "TA", "location": "", "start": "Jan 2025", "end": "Apr 2025",
-         "bullets": ["Ran workshops for 25 students."]},
+         "end": "Aug 2025", "bullets": ["Cut report time from 14s to 2s.", "Raised coverage to 85%.",
+                                        "Wrote 12 integration tests.", "Reviewed pull requests.", "Mentored 2 interns."]},
+        {"id": "e-club", "organization": "Club", "role": "TA", "location": "", "start": "Jan 2025", "end": "Apr 2025",
+         "points": [{"id": "p-club", "phrasings": ["Ran workshops for 25 students.",
+                                                   "Led weekly Git workshops for 25 students."]}]},
     ],
     "projects": [{"name": f"P{i}", "tech": ["Python"], "link": "", "date": "2025", "bullets": [f"Built P{i}."]}
                  for i in range(4)],
@@ -28,11 +31,15 @@ PROFILE = {
 }
 
 RESUME_ANSWER = {
-    "experience": [{"source_index": 0, "bullets": ["Cut report time from 14s to 2s.", "Raised coverage to 85%.",
-                                                   "Served 9000 users.", "a", "b"]},
-                   {"source_index": 7, "bullets": ["Made up role."]},
-                   {"source_index": 0, "bullets": ["Duplicate."]}],
-    "projects": [{"source_index": i, "bullets": [f"Built P{i}."]} for i in (3, 0, 1, 2)],
+    # Acme: a duplicate point, an unknown point and an out-of-range phrasing are dropped, and picks cap at 4.
+    "experience": [{"source_index": 0, "picks": [{"point": 1, "phrasing": 0}, {"point": 0, "phrasing": 5},
+                                                 {"point": 0, "phrasing": 0}, {"point": 9, "phrasing": 0},
+                                                 {"point": 2, "phrasing": 0}, {"point": 3, "phrasing": 0},
+                                                 {"point": 4, "phrasing": 0}]},
+                   {"source_index": 7, "picks": [{"point": 0, "phrasing": 0}]},
+                   {"source_index": 0, "picks": []},
+                   {"source_index": 1, "picks": [{"point": 0, "phrasing": 1}]}],
+    "projects": [{"source_index": i, "picks": [{"point": 0, "phrasing": 0}]} for i in (3, 0, 1, 2)],
     "skills": [{"label": "Languages", "items": ["c++", "Python", "Rust"]}, {"label": "Tools", "items": ["Kubernetes"]}],
     "notes": {"emphasized": ["Backend work."], "gaps": ["No Go experience."], "description_used": True},
 }
@@ -76,7 +83,11 @@ class DocumentsTest(unittest.TestCase):
         prompt = ask.call_args.args[0]
         self.assertIn(ai.HONESTY_RULES, prompt)
         self.assertIn("Build backend services", prompt)
-        self.assertIn("experience[1]: TA at Club", prompt)
+        # Every point and phrasing is listed once, in the index; the profile JSON carries no bullets.
+        self.assertIn("experience[1]: TA at Club (Jan 2025 – Apr 2025)\n  point 0, phrasing 0: Ran workshops for 25 "
+                      "students.\n  point 0, phrasing 1: Led weekly Git workshops for 25 students.", prompt)
+        self.assertNotIn('"bullets"', prompt)
+        self.assertNotIn('"phrasings"', prompt)
         self.assertEqual(ask.call_args.kwargs["schema"], documents.RESUME_SCHEMA)
 
         doc = documents.get_document(result["document_id"])
@@ -87,19 +98,35 @@ class DocumentsTest(unittest.TestCase):
         self.assertEqual(c["header"], {"name": "Test Person", "contact": ["Waterloo, ON", "555 0100", "t@example.com"],
                                        "links": [{"label": "GitHub", "url": "github.com/test"}]})
         # Unknown and duplicate indexes are dropped; bullets capped at 4; projects capped at 3.
-        self.assertEqual([e["organization"] for e in c["experience"]], ["Acme"])
-        self.assertEqual(c["experience"][0]["dates"], "May 2025 – Aug 2025")
-        self.assertEqual(len(c["experience"][0]["bullets"]), 4)
+        self.assertEqual([e["organization"] for e in c["experience"]], ["Acme", "Club"])
+        acme, club = c["experience"]
+        self.assertEqual(acme["dates"], "May 2025 – Aug 2025")
+        # Picks are copied verbatim, in Claude's order, one per point, capped at 4.
+        self.assertEqual(acme["bullets"], ["Raised coverage to 85%.", "Cut report time from 14s to 2s.",
+                                           "Wrote 12 integration tests.", "Reviewed pull requests."])
+        self.assertEqual([r["phrasing"] for r in acme["refs"]], [0, 0, 0, 0])
+        self.assertEqual(len({r["point_id"] for r in acme["refs"]}), 4)
+        self.assertTrue(acme["source_id"].startswith("e-"))
+        self.assertEqual(club["bullets"], ["Led weekly Git workshops for 25 students."])
+        self.assertEqual(club["refs"], [{"point_id": "p-club", "phrasing": 1}])
+        self.assertEqual(club["source_id"], "e-club")
         self.assertEqual([p["name"] for p in c["projects"]], ["P3", "P0", "P1"])
+        self.assertEqual(c["projects"][0]["bullets"], ["Built P3."])
         # Only skills the profile lists, with the profile's spelling.
         self.assertEqual(c["skills"], [{"label": "Languages", "items": ["C++", "Python"]}])
         self.assertEqual(c["education"][0]["degree"], "BASc, Computer Engineering")
         self.assertEqual(c["education"][0]["details"], ["GPA: 3.9", "Courses: OS."])
         self.assertTrue(c["notes"]["description_used"])
         self.assertEqual(c["notes"]["gaps"], ["No Go experience."])
-        # 9000 isn't in the profile, so it's flagged.
-        self.assertEqual(len(c["notes"]["checks"]), 1)
-        self.assertIn("9000", c["notes"]["checks"][0])
+        # Verbatim text can't introduce numbers the profile doesn't have.
+        self.assertEqual(c["notes"]["checks"], [])
+
+    def test_bullets_claude_writes_are_ignored(self):
+        answer = {**RESUME_ANSWER, "experience": [{"source_index": 1, "picks": [], "bullets": ["Served 9000 users."]}]}
+        result, _ = self.run_job("tailor_resume", {"listing_id": "gh:1"}, answer)
+        club = documents.get_document(result["document_id"])["content"]["experience"][0]
+        self.assertEqual(club["bullets"], ["Ran workshops for 25 students."])  # primary phrasing fallback
+        self.assertEqual(club["refs"], [{"point_id": "p-club", "phrasing": 0}])
 
     def test_resume_without_description_and_without_selections(self):
         answer = {"experience": [], "projects": [], "skills": [], "notes": {"emphasized": [], "gaps": [],
@@ -108,7 +135,10 @@ class DocumentsTest(unittest.TestCase):
         self.assertIn("JOB DESCRIPTION: not available", ask.call_args.args[0])
         c = documents.get_document(result["document_id"])["content"]
         self.assertFalse(c["notes"]["description_used"])
-        self.assertEqual(len(c["experience"]), 2)  # falls back to every role with its own bullets
+        self.assertEqual(len(c["experience"]), 2)  # falls back to every role with its first points
+        self.assertEqual(c["experience"][0]["bullets"], ["Cut report time from 14s to 2s.", "Raised coverage to 85%.",
+                                                         "Wrote 12 integration tests.", "Reviewed pull requests."])
+        self.assertEqual(c["experience"][1]["bullets"], ["Ran workshops for 25 students."])
         self.assertEqual(c["skills"][0], {"label": "Languages", "items": ["Python", "C++"]})
         self.assertEqual(c["notes"]["checks"], [])
 
