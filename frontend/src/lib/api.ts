@@ -103,7 +103,7 @@ export async function runJob<R = unknown>(kind: T.JobKind, payload: Record<strin
 }
 
 // ---------- profile and ranking ----------
-export const profile = () => request<T.Profile>("/api/profile");
+export const profile = (o: Quiet = {}) => request<T.Profile>("/api/profile", o);
 export const updateProfile = (update: { data?: T.ProfileData; preferences?: T.Preferences }) =>
   request<T.Profile>("/api/profile", { method: "PUT", body: update });
 export function uploadResume(file: File, o: Quiet = {}) {

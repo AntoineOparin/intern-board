@@ -2,8 +2,10 @@
   // Printable, editable view of one tailored resume or cover letter (doc.html?id=…).
   import { onMount, tick } from "svelte";
   import * as api from "../../lib/api";
+  import Icon from "../../lib/components/Icon.svelte";
+  import { swapOptions } from "../../lib/points";
   import { editable } from "./editable";
-  import type { DocHeader, FullDocument, LetterContent, ResumeContent } from "../../lib/types";
+  import type { BulletRef, DocHeader, FullDocument, LetterContent, ProfileData, ResumeContent, ResumeEntry } from "../../lib/types";
 
   const docId = new URLSearchParams(location.search).get("id");
   const PAGE_PX = 10 * 96; // 11in page minus 0.5in margins, in CSS px
@@ -21,6 +23,10 @@
   let msg = $state({ text: "", kind: "" });
   let fitMsg = $state({ text: "", kind: "" });
   let sheet: HTMLElement | undefined = $state();
+  // The current profile, so a resume bullet can be swapped for another phrasing of its point.
+  let pool = $state.raw<ProfileData | null>(null);
+  let open = $state<string | null>(null); // key of the open swap menu
+  let menuEl: HTMLElement | undefined = $state();
 
   const resume = () => content as ResumeContent;
   const letter = () => content as LetterContent;
@@ -57,16 +63,50 @@
     fit();
   }
 
-  // Drop lines that were emptied while editing.
+  // Drop lines that were emptied while editing (a bullet's ref goes with it).
   function cleaned(c: ResumeContent | LetterContent) {
     const copy = structuredClone(c) as ResumeContent & LetterContent;
     const trim = (arr: string[]) => arr.filter(s => String(s).trim());
     if (copy.paragraphs) copy.paragraphs = trim(copy.paragraphs);
-    for (const x of [...(copy.experience || []), ...(copy.projects || [])]) x.bullets = trim(x.bullets);
+    for (const x of [...(copy.experience || []), ...(copy.projects || [])]) {
+      const keep = x.bullets.map(s => !!String(s).trim());
+      x.bullets = x.bullets.filter((_, i) => keep[i]);
+      if (x.refs) x.refs = x.refs.filter((_, i) => keep[i]);
+    }
     for (const e of copy.education || []) e.details = trim(e.details);
     if (copy.header) copy.header.contact = trim(copy.header.contact);
     return copy;
   }
+
+  // ---------- swapping a bullet for another phrasing ----------
+  const swapButton = (key: string) => sheet?.querySelector(`[data-swap="${key}"]`) as HTMLElement | null;
+  async function toggleSwap(key: string) {
+    open = open === key ? null : key;
+    if (open) { await tick(); menuEl?.querySelector("button")?.focus(); }
+  }
+  function closeSwap(key: string) {
+    open = null;
+    swapButton(key)?.focus();
+  }
+  async function swap(x: ResumeEntry, i: number, text: string, ref: BulletRef, key: string) {
+    x.bullets[i] = text;
+    (x.refs ??= [])[i] = ref;
+    markDirty();
+    open = null;
+    renders++;
+    await fit();
+    swapButton(key)?.focus();
+  }
+  // While a menu is open: a click elsewhere closes it, Escape closes it and returns focus.
+  $effect(() => {
+    const key = open;
+    if (!key) return;
+    const onDown = (e: PointerEvent) => { if (!(e.target as Element).closest?.(".r-swap, .r-swap-menu")) open = null; };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); closeSwap(key); } };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener("pointerdown", onDown); window.removeEventListener("keydown", onKey); };
+  });
 
   async function save() {
     if (!doc || !content) return;
@@ -110,10 +150,39 @@
       const name = d.content.header?.name || "";
       document.title = [name, d.kind === "resume" ? "Resume" : "Cover letter", d.listing?.company].filter(Boolean).join(" – ");
       render(d);
+      if (d.kind === "resume") api.profile({ quiet: true }).then(p => { pool = p.data; }).catch(() => { /* no swapping, nothing else lost */ });
     })().catch(err => { error = (err as Error).message; });
     return () => window.removeEventListener("beforeunload", beforeunload);
   });
 </script>
+
+{#snippet bullets(x: ResumeEntry, prefix: string)}
+  <ul>
+    {#each x.bullets as _, i (i)}
+      {@const key = `${prefix}-${i}`}
+      {@const options = swapOptions(x, i, pool)}
+      <li class="r-li">
+        <div class="r-bullet" use:editable={item(x.bullets, i)}></div>
+        {#if options}
+          <button type="button" class="r-swap" data-swap={key} aria-label="Swap this bullet for another phrasing" aria-expanded={open === key}
+            title="Swap for another phrasing" onclick={() => toggleSwap(key)}><Icon name="swap" /></button>
+          {#if open === key}
+            <div class="r-swap-menu" role="group" aria-label="Other phrasings" bind:this={menuEl}>
+              {#if options.phrasings.length}
+                <h4>Other phrasings of this point</h4>
+                <ul>{#each options.phrasings as o (o.phrasing)}<li><button type="button" onclick={() => swap(x, i, o.text, { point_id: x.refs![i]!.point_id, phrasing: o.phrasing }, key)}>{o.text}</button></li>{/each}</ul>
+              {/if}
+              {#if options.points.length}
+                <h4>Other points from this entry</h4>
+                <ul>{#each options.points as o (o.point_id)}<li><button type="button" onclick={() => swap(x, i, o.text, { point_id: o.point_id, phrasing: 0 }, key)}>{o.text}</button></li>{/each}</ul>
+              {/if}
+            </div>
+          {/if}
+        {/if}
+      </li>
+    {/each}
+  </ul>
+{/snippet}
 
 {#snippet header(h: DocHeader, cls: string)}
   <header class={cls}>
@@ -168,7 +237,7 @@
                     <div class="r-entry">
                       <div class="r-row"><div><strong use:editable={field(x, "organization")}></strong></div><span use:editable={field(x, "location")}></span></div>
                       <div class="r-row"><div><em use:editable={field(x, "role")}></em></div><span use:editable={field(x, "dates")}></span></div>
-                      <ul>{#each x.bullets as _, i (i)}<li use:editable={item(x.bullets, i)}></li>{/each}</ul>
+                      {@render bullets(x, `e${idx}`)}
                     </div>
                   {/each}
                 </section>
@@ -178,7 +247,7 @@
                   {#each c.projects as p, idx (idx)}
                     <div class="r-entry">
                       <div class="r-row"><div><strong use:editable={field(p, "name")}></strong>{#if p.tech}<span>{" | "}</span><span class="r-tech" use:editable={field(p, "tech")}></span>{/if}{#if p.link}<span>{" | "}</span><span use:editable={field(p, "link")}></span>{/if}</div><span use:editable={field(p, "dates")}></span></div>
-                      <ul>{#each p.bullets as _, i (i)}<li use:editable={item(p.bullets, i)}></li>{/each}</ul>
+                      {@render bullets(p, `p${idx}`)}
                     </div>
                   {/each}
                 </section>
@@ -212,6 +281,7 @@
         <h2>{doc.kind === "resume" ? "Tailoring notes" : "Letter notes"}</h2>
         {#if doc.stale}<p class="warn">Your profile has changed since this was written.</p>{/if}
         {#if notes.description_used === false}<p class="warn">Written without the job description, from the title and company only.</p>{/if}
+        {#if doc.kind === "resume" && pool}<p class="muted">Hover a bullet and use the swap button to pick another phrasing from your profile.</p>{/if}
         {#if doc.kind === "cover_letter"}
           <p>{doc.content.tone ? `${doc.content.tone[0].toUpperCase()}${doc.content.tone.slice(1)} tone · ` : ""}{words} words</p>
         {/if}

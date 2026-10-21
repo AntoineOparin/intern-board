@@ -38,17 +38,21 @@
       ],
       "experience": [
         {
+          "source_id": "e-harbour",
           "organization": "Harbourview Labs", "role": "Software Developer Intern", "location": "Toronto, ON", "dates": "May 2025 – Aug 2025",
           "bullets": [
             "Built a Python service that cut report generation from 40 minutes to 6 minutes.",
             "Wrote integration tests for the service's REST endpoints."
-          ]
+          ],
+          "refs": [{ "point_id": "p-report", "phrasing": 0 }, { "point_id": "p-tests", "phrasing": 0 }]
         }
       ],
       "projects": [
         {
+          "source_id": "j-trailmap",
           "name": "Trailmap", "tech": "TypeScript, Go", "link": "", "dates": "2024",
-          "bullets": ["Built a route planner used by 30 club members."]
+          "bullets": ["Built a route planner used by 30 club members."],
+          "refs": [{ "point_id": "p-planner", "phrasing": 0 }]
         }
       ],
       "skills": [

@@ -3,6 +3,7 @@
   import Select from "../../lib/components/Select.svelte";
   import RankingPanel from "./RankingPanel.svelte";
   import Integrations from "./Integrations.svelte";
+  import PointsEditor from "./PointsEditor.svelte";
   import * as api from "../../lib/api";
   import { ago } from "../../lib/format";
   import { profile, resumeStatus, refreshProfile, uploadResume } from "../../lib/stores/profile.svelte";
@@ -166,6 +167,9 @@
     <div class="row-end"><span id="prefs-msg" class="form-msg {prefsMsg.kind}" role="status">{prefsMsg.text}</span><button class="btn btn-primary">Save preferences</button></div>
   </form>
 </div>
+{#if hasData}
+  <PointsEditor />
+{/if}
 <div id="profile-extras">
   <RankingPanel />
   <Integrations />

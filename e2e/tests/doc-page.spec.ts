@@ -52,6 +52,55 @@ test.describe("resume page", () => {
     await expect(bullets).toHaveCount(1);
   });
 
+  test("a bullet can be swapped for another phrasing of its point, or for an unused point", async ({ api, page }) => {
+    await page.goto("./doc.html?id=doc-resume-1");
+    const bullets = page.locator("#sheet .r-section").nth(1).locator("li.r-li");
+    await expect(page.locator("#doc-notes p").last()).toHaveText("Hover a bullet and use the swap button to pick another phrasing from your profile.");
+    const swap = bullets.nth(0).getByRole("button", { name: "Swap this bullet for another phrasing" });
+    await bullets.nth(0).hover();
+    await swap.click();
+    const menu = page.getByRole("group", { name: "Other phrasings" });
+    await expect(menu.locator("h4")).toHaveText(["Other phrasings of this point", "Other points from this entry"]);
+    await expect(menu.getByRole("button")).toHaveText([
+      "Cut report generation from 40 minutes to 6 minutes by building a Python service.",
+      "Reviewed pull requests from two other interns.",
+    ]);
+    await expect(menu.getByRole("button").first()).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+    await expect(swap).toBeFocused();
+
+    await swap.click();
+    await menu.getByRole("button", { name: "Cut report generation from 40 minutes to 6 minutes by building a Python service." }).click();
+    await expect(bullets.nth(0)).toHaveText("Cut report generation from 40 minutes to 6 minutes by building a Python service.");
+    await expect(page.locator("#doc-msg")).toHaveText("Unsaved edits");
+    await bullets.nth(1).getByRole("button", { name: "Swap this bullet for another phrasing" }).click();
+    await expect(menu.locator("h4")).toHaveText(["Other points from this entry"]);
+    await menu.getByRole("button", { name: "Reviewed pull requests from two other interns." }).click();
+    await expect(bullets.nth(1)).toHaveText("Reviewed pull requests from two other interns.");
+    await page.getByRole("button", { name: "Save edits" }).click();
+    await expect(page.locator("#doc-msg")).toHaveText("Saved");
+    const sent = api.last("PUT", "/api/documents/doc-resume-1")?.body.content.experience[0];
+    expect(sent.source_id).toBe("e-harbour");
+    expect(sent.refs).toEqual([{ point_id: "p-report", phrasing: 1 }, { point_id: "p-review", phrasing: 0 }]);
+  });
+
+  test("a document written before points, or a profile that can't be read, has no swap buttons", async ({ api, page }) => {
+    delete api.docs["doc-resume-1"].content.experience[0].refs;
+    await page.goto("./doc.html?id=doc-resume-1");
+    await expect(page.locator("#sheet .r-section").nth(1).locator("li")).toHaveCount(2);
+    await expect(page.locator("#sheet .r-swap")).toHaveCount(0); // the project's only point has one phrasing
+    await expect(page.locator("#doc-notes p")).toHaveText(["Hover a bullet and use the swap button to pick another phrasing from your profile."]);
+
+    api.docs["doc-resume-1"] = fixture("documents.json").resume;
+    api.on("GET", "/api/profile", { status: 500, json: { detail: "boom" } });
+    await page.goto("./doc.html?id=doc-resume-1");
+    await expect(page.locator("#sheet .r-section").nth(1).locator("li")).toHaveCount(2);
+    await expect(page.locator("#sheet .r-swap")).toHaveCount(0);
+    await expect(page.locator("#doc-notes p")).toHaveCount(0);
+    await expect(page.locator(".toast")).toHaveCount(0);
+  });
+
   test("a failed save keeps the edits and shows the error", async ({ app, api, page }) => {
     api.on("PUT", "/api/documents/doc-resume-1", { status: 422, json: { detail: "The document is missing: skills." } });
     await page.goto("./doc.html?id=doc-resume-1");

@@ -1,7 +1,32 @@
+import { SvelteMap } from "svelte/reactivity";
 import * as api from "../api";
-import type { Profile } from "../types";
+import type { Profile, ProfileData, Suggestions } from "../types";
 
 export const profile = $state({ data: null as Profile | null });
+
+// ---------- points editor ----------
+// The draft lives here so edits and running suggestions survive leaving the Profile page.
+
+export const editor = $state({ draft: null as ProfileData | null, dirty: false });
+
+export type Suggestion = { status: "running" | "done" | "error"; seconds: number; items: string[]; dropped: number; error?: string };
+/** Claude's suggested phrasings per point id, waiting for the user to keep or discard them. */
+export const suggestions = new SvelteMap<string, Suggestion>();
+
+/** Ask Claude for alternative phrasings of one saved point. Only ever called from a click. */
+export async function suggestPhrasings(pointId: string) {
+  if (suggestions.get(pointId)?.status === "running") return;
+  suggestions.set(pointId, { status: "running", seconds: 0, items: [], dropped: 0 });
+  try {
+    const r = await api.runJob<Suggestions>("suggest_phrasings", { point_id: pointId }, seconds => {
+      const current = suggestions.get(pointId);
+      if (current?.status === "running") suggestions.set(pointId, { ...current, seconds });
+    });
+    suggestions.set(pointId, { status: "done", seconds: 0, items: r.suggestions, dropped: r.dropped });
+  } catch (err) {
+    suggestions.set(pointId, { status: "error", seconds: 0, items: [], dropped: 0, error: (err as Error).message });
+  }
+}
 
 export const hasProfileData = () => !!profile.data && Object.keys(profile.data.data).length > 0;
 /** LinkedIn allows 200-character notes on free accounts and 300 on Premium. */

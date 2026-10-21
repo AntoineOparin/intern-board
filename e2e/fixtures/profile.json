@@ -14,13 +14,21 @@
     ],
     "experience": [
       {
-        "organization": "Harbourview Labs", "role": "Software Developer Intern", "location": "Toronto, ON",
-        "start": "May 2025", "end": "Aug 2025",
-        "bullets": ["Built a Python service that cut report generation from 40 minutes to 6 minutes."]
+        "id": "e-harbour", "organization": "Harbourview Labs", "role": "Software Developer Intern", "location": "Toronto, ON",
+        "start": "May 2025", "end": "Aug 2025", "missing_from_resume": false,
+        "points": [
+          { "id": "p-report", "phrasings": [
+            "Built a Python service that cut report generation from 40 minutes to 6 minutes.",
+            "Cut report generation from 40 minutes to 6 minutes by building a Python service."
+          ] },
+          { "id": "p-tests", "phrasings": ["Wrote integration tests for the service's REST endpoints."] },
+          { "id": "p-review", "phrasings": ["Reviewed pull requests from two other interns."] }
+        ]
       }
     ],
     "projects": [
-      { "name": "Trailmap", "tech": ["TypeScript", "Go"], "link": "", "date": "2024", "bullets": ["Built a route planner used by 30 club members."] }
+      { "id": "j-trailmap", "name": "Trailmap", "tech": ["TypeScript", "Go"], "link": "", "date": "2024", "missing_from_resume": false,
+        "points": [{ "id": "p-planner", "phrasings": ["Built a route planner used by 30 club members."] }] }
     ],
     "skills": { "languages": ["Python", "Go", "TypeScript"], "frameworks": ["FastAPI", "React"], "tools": ["Git", "Docker"], "other": [] },
     "awards": ["Dean's list 2024"],

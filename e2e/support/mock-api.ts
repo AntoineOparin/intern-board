@@ -18,7 +18,7 @@ export type Reply = { status?: number; json?: unknown };
 type Handler = (req: Req, api: MockApi) => Reply | Promise<Reply>;
 export type JobOutcome = { status: "done" | "error"; result?: any; error?: string; polls?: number };
 
-const KINDS = ["cover_letter", "extract_profile", "fetch_description", "outreach", "people_search", "rank_listings", "tailor_resume"];
+const KINDS = ["cover_letter", "extract_profile", "fetch_description", "outreach", "people_search", "rank_listings", "suggest_phrasings", "tailor_resume"];
 const KNOWN_HOST_ASSETS = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;
 
 /** Mirrors pydantic's 422 body, so the page shows exactly what it would for the real server. */
@@ -410,6 +410,10 @@ export class MockApi {
       case "fetch_description": return { status: "done", result: { text: "Full job description. ".repeat(20), source: "claude", fetched_at: NOW } };
       case "rank_listings": return { status: "done", result: { ranked: 40, requested: 40, skipped: 0, batches: 2, failed_batches: 0, error: null, seconds: 52.3 } };
       case "extract_profile": return { status: "done", result: { ok: true } };
+      case "suggest_phrasings": return { status: "done", result: { point_id: payload.point_id, dropped: 1, suggestions: [
+        "Cut report generation from 40 minutes to 6 minutes with a Python service.",
+        "Delivered a Python service that brought report generation down from 40 minutes to 6 minutes.",
+      ] } };
     }
     return { status: "error", error: "Unknown job" };
   }

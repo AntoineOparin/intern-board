@@ -79,6 +79,32 @@
 .r-skills b, .r-detail b { font-weight: 600; }
 .r-detail { margin-top: calc(1pt * var(--sp)) !important; }
 
+/* Swapping a bullet for another phrasing: a button in the right margin (so the page height is
+   unchanged) and a menu in the app's font. Both stay out of the print. */
+.sheet li.r-li { position: relative; }
+.r-swap {
+  position: absolute; right: -2em; top: -.1em; width: 1.6em; height: 1.6em; padding: 0;
+  display: grid; place-items: center; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--surface); color: var(--ink-2); cursor: pointer; opacity: 0; transition: opacity .15s, color .15s;
+}
+.r-swap .icon { width: 1em; height: 1em; }
+.r-swap:hover { color: var(--accent); border-color: var(--accent-line); }
+.r-li:hover .r-swap, .r-li:focus-within .r-swap, .r-swap:focus-visible, .r-swap[aria-expanded="true"] { opacity: 1; }
+.r-swap-menu {
+  position: absolute; left: -1.15em; right: -2em; top: 100%; z-index: 2; margin-top: 4px; padding: 8px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg); font: 400 13px/1.4 var(--font); -webkit-font-smoothing: antialiased;
+}
+.r-swap-menu h4 { margin: 0 0 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.r-swap-menu ul + h4 { margin-top: 10px; }
+.sheet .r-swap-menu ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.sheet .r-swap-menu li { margin: 0; padding: 0; }
+.r-swap-menu button {
+  display: block; width: 100%; text-align: left; padding: 6px 8px; border: 0; border-radius: 4px;
+  background: none; color: var(--ink); cursor: pointer;
+}
+.r-swap-menu button:hover { background: var(--bg); }
+
 /* cover letter */
 .doc-l-head { margin-bottom: calc(22pt * var(--sp)); }
 .doc-l-head .r-name { font-size: 1.8em; }
@@ -99,5 +125,6 @@
   .doc-stage { display: block; padding: 0; overflow: visible; }
   .sheet { width: auto; min-height: 0; padding: 0; box-shadow: none; border-radius: 0; }
   .sheet [contenteditable]:hover, .sheet [contenteditable]:focus { background: none; box-shadow: none; }
+  .r-swap, .r-swap-menu { display: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

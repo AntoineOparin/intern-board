@@ -113,6 +113,102 @@ test.describe("resume", () => {
   });
 });
 
+test.describe("points", () => {
+  const title = "Software Developer Intern · Harbourview Labs";
+
+  test("lists each entry's points and phrasings; adding a phrasing and saving sends the whole profile", async ({ app, api, page }) => {
+    await app.open("#profile");
+    const ed = page.locator("#points-editor");
+    await expect(ed.getByRole("article")).toHaveCount(2);
+    await expect(ed.getByRole("article").nth(0)).toHaveAccessibleName(title);
+    await expect(ed.locator(".pe-point")).toHaveCount(4);
+    await expect(ed.locator(".pe-point-label").first()).toHaveText("Point 1 · 2 phrasings");
+    await expect(ed.getByRole("textbox", { name: `Phrasing 2 of point 1, ${title}` }))
+      .toHaveValue("Cut report generation from 40 minutes to 6 minutes by building a Python service.");
+    await expect(page.locator("#points-save")).toBeDisabled();
+
+    await ed.getByRole("button", { name: "Add phrasing" }).first().click();
+    await ed.getByRole("textbox", { name: `Phrasing 3 of point 1, ${title}` }).fill("Reduced report generation from 40 minutes to 6 minutes.");
+    await expect(page.locator("#points-msg")).toHaveText("Unsaved changes");
+    expect(api.calls("PUT", "/api/profile")).toHaveLength(0);
+    await page.locator("#points-save").click();
+    await expect(page.locator("#points-msg")).toHaveText("Saved.");
+    const sent = api.last("PUT", "/api/profile")?.body.data;
+    expect(sent.name).toBe("Sam Rivera");
+    expect(sent.experience[0].points[0].phrasings).toEqual([
+      "Built a Python service that cut report generation from 40 minutes to 6 minutes.",
+      "Cut report generation from 40 minutes to 6 minutes by building a Python service.",
+      "Reduced report generation from 40 minutes to 6 minutes.",
+    ]);
+    expect(api.jobRequests()).toHaveLength(0);
+  });
+
+  test("Suggest variations asks Claude only on click; kept suggestions are saved with the profile", async ({ app, api, page }) => {
+    await app.open("#profile");
+    const point = page.locator("#points-editor .pe-point").nth(1);
+    expect(api.jobRequests()).toHaveLength(0);
+    await point.getByRole("button", { name: "Suggest variations" }).click();
+    expect(api.jobRequests("suggest_phrasings")).toHaveLength(1);
+    expect(api.jobRequests("suggest_phrasings")[0].body.payload).toEqual({ point_id: "p-tests" });
+    const list = point.getByRole("list", { name: "Suggested phrasings for point 2" });
+    await expect(list.locator("li")).toHaveCount(2, { timeout: 6000 });
+    await expect(point.locator(".pe-suggest-foot span")).toHaveText("1 left out for changing the facts. Kept phrasings are saved with your changes.");
+    await list.locator("li").nth(1).getByRole("button", { name: "Discard" }).click();
+    await expect(list.locator("li")).toHaveCount(1);
+    await list.getByRole("button", { name: "Keep" }).click();
+    await expect(point.getByRole("textbox", { name: `Phrasing 2 of point 2, ${title}` }))
+      .toHaveValue("Cut report generation from 40 minutes to 6 minutes with a Python service.");
+    await expect(point.locator(".pe-suggest")).toHaveCount(0);
+    expect(api.calls("PUT", "/api/profile")).toHaveLength(0); // kept locally; nothing saved yet
+    await page.locator("#points-save").click();
+    await expect(page.locator("#points-msg")).toHaveText("Saved.");
+    expect(api.last("PUT", "/api/profile")?.body.data.experience[0].points[1].phrasings).toEqual([
+      "Wrote integration tests for the service's REST endpoints.",
+      "Cut report generation from 40 minutes to 6 minutes with a Python service.",
+    ]);
+  });
+
+  test("Suggest variations saves unsaved edits first, and an empty result is explained", async ({ app, api, page }) => {
+    api.jobOutcomes.suggest_phrasings = { status: "done", result: { point_id: "p-review", suggestions: [], dropped: 3 } };
+    await app.open("#profile");
+    const point = page.locator("#points-editor .pe-point").nth(2);
+    await point.getByRole("textbox", { name: `Phrasing 1 of point 3, ${title}` }).fill("Reviewed pull requests from two other interns each week.");
+    await point.getByRole("button", { name: "Suggest variations" }).click();
+    await expect.poll(() => api.jobRequests("suggest_phrasings").length).toBe(1);
+    expect(api.calls("PUT", "/api/profile")).toHaveLength(1);
+    expect(api.last("PUT", "/api/profile")?.body.data.experience[0].points[2].phrasings).toEqual(["Reviewed pull requests from two other interns each week."]);
+    await expect(point.locator(".pe-suggest .form-msg")).toHaveText("Claude's suggestions changed the facts or repeated your phrasings, so none were kept. Try again.", { timeout: 6000 });
+    await point.getByRole("button", { name: "Dismiss" }).click();
+    await expect(point.locator(".pe-suggest")).toHaveCount(0);
+  });
+
+  test("points can be added, reordered and deleted; a removed entry asks first", async ({ app, api, page }) => {
+    await app.open("#profile");
+    const entry = page.locator("#points-editor").getByRole("article").nth(0);
+    await entry.getByRole("button", { name: "Move point 3 up" }).click();
+    await expect(entry.getByRole("textbox", { name: `Phrasing 1 of point 2, ${title}` })).toHaveValue("Reviewed pull requests from two other interns.");
+    await entry.getByRole("button", { name: "Delete point" }).nth(2).click();
+    await expect(entry.locator(".pe-point")).toHaveCount(2);
+    await entry.getByRole("button", { name: "Add point" }).click();
+    await expect(entry.locator(".pe-point")).toHaveCount(3);
+    await entry.getByRole("textbox", { name: `Phrasing 1 of point 3, ${title}` }).fill("Presented the service to 12 engineers.");
+    await expect(entry.getByRole("button", { name: "Suggest variations" }).nth(2)).toBeEnabled();
+
+    page.once("dialog", d => d.dismiss());
+    await page.locator("#points-editor").getByRole("article").nth(1).getByRole("button", { name: "Remove entry" }).click();
+    await expect(page.locator("#points-editor").getByRole("article")).toHaveCount(2);
+    await page.locator("#points-save").click();
+    await expect(page.locator("#points-msg")).toHaveText("Saved.");
+    const sent = api.last("PUT", "/api/profile")?.body.data;
+    expect(sent.experience[0].points.map((p: any) => p.phrasings[0])).toEqual([
+      "Built a Python service that cut report generation from 40 minutes to 6 minutes.",
+      "Reviewed pull requests from two other interns.",
+      "Presented the service to 12 engineers.",
+    ]);
+    expect(sent.projects).toHaveLength(1);
+  });
+});
+
 test.describe("preferences", () => {
   test("shows saved preferences and saves every field, including LinkedIn Premium", async ({ app, api, page }) => {
     await app.open("#profile");

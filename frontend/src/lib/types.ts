@@ -144,7 +144,7 @@ export type AddedCompany = Omit<Company, "listings" | "board_url"> & { kept: num
 
 export type JobKind =
   | "extract_profile" | "fetch_description" | "rank_listings" | "tailor_resume"
-  | "cover_letter" | "outreach" | "people_search";
+  | "cover_letter" | "outreach" | "people_search" | "suggest_phrasings";
 
 export type JobStatus = "queued" | "running" | "done" | "error";
 
@@ -168,6 +168,25 @@ export interface AiStatus {
 
 // ---------- profile (profile.py) ----------
 
+/** One fact about an experience or project, said in one or more ways. phrasings[0] is the primary. */
+export interface Point {
+  id: string;
+  phrasings: string[];
+}
+
+interface PointsEntry {
+  id: string;
+  points: Point[];
+  missing_from_resume?: boolean; // kept from an earlier resume that the latest upload no longer lists
+  bullets?: string[]; // legacy flat shape; the server converts it, see lib/points.ts pointsOf()
+}
+export interface ExperienceEntry extends PointsEntry {
+  organization: string; role: string; location: string; start: string; end: string;
+}
+export interface ProjectEntry extends PointsEntry {
+  name: string; tech: string[]; link: string; date: string;
+}
+
 export interface ProfileData {
   name?: string;
   email?: string;
@@ -175,11 +194,18 @@ export interface ProfileData {
   location?: string;
   links?: { label: string; url: string }[];
   education?: { school: string; degree: string; field: string; location: string; start: string; end: string; gpa: string; details: string[] }[];
-  experience?: { organization: string; role: string; location: string; start: string; end: string; bullets: string[] }[];
-  projects?: { name: string; tech: string[]; link: string; date: string; bullets: string[] }[];
+  experience?: ExperienceEntry[];
+  projects?: ProjectEntry[];
   skills?: { languages: string[]; frameworks: string[]; tools: string[]; other: string[] };
   awards?: string[];
   summary?: string;
+}
+
+/** Result of the suggest_phrasings job: checked suggestions for one point, not saved anywhere. */
+export interface Suggestions {
+  point_id: string;
+  suggestions: string[];
+  dropped: number; // suggestions the server rejected for changing the facts
 }
 
 export interface Preferences {
@@ -268,11 +294,23 @@ export interface DocHeader {
   links: { label: string; url: string }[];
 }
 
+/** Where a resume bullet came from: a point in the profile and which of its phrasings. */
+export interface BulletRef {
+  point_id: string;
+  phrasing: number;
+}
+export interface ResumeEntry {
+  source_id?: string; // the profile entry's id (documents written before points have none)
+  bullets: string[];
+  refs?: (BulletRef | null)[]; // refs[i] belongs to bullets[i]
+}
+
 export interface ResumeContent {
   header: DocHeader;
   education: { school: string; degree: string; location: string; dates: string; details: string[] }[];
-  experience: { organization: string; role: string; location: string; dates: string; bullets: string[] }[];
-  projects: { name: string; tech: string; link: string; dates: string; bullets: string[] }[];
+  experience: (ResumeEntry & { organization: string; role: string; location: string; dates: string })[];
+  // tech is a string here: the server joins the profile's list with ", ".
+  projects: (ResumeEntry & { name: string; tech: string; link: string; dates: string })[];
   skills: { label: string; items: string[] }[];
   awards: string[];
   notes: DocumentNotes;
