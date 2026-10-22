@@ -1,0 +1,12 @@
+{
+  "with_profile": {
+    "has_profile": true, "profile_version": 7, "active": 11,
+    "quick": 9, "quick_at": 1791997200, "claude": 2, "claude_at": 1791914400,
+    "unscored": 0, "computed": 0, "running_job": null
+  },
+  "no_profile": {
+    "has_profile": false, "profile_version": 0, "active": 11,
+    "quick": 0, "quick_at": null, "claude": 0, "claude_at": null,
+    "unscored": 11, "computed": 0, "running_job": null
+  }
+}

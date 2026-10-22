@@ -1,0 +1,21 @@
+{
+  "resume_filename": null,
+  "data": {},
+  "preferences": {
+    "target_roles": [],
+    "categories": [],
+    "regions": [],
+    "terms": [],
+    "degree_level": "",
+    "graduation": "",
+    "work_authorization": "",
+    "school": "",
+    "notes": "",
+    "linkedin_premium": false
+  },
+  "version": 0,
+  "updated_at": null,
+  "has_resume": false,
+  "resume_chars": 0,
+  "extract_job": null
+}

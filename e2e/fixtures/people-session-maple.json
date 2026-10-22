@@ -1,0 +1,102 @@
+{
+  "listing": {
+    "id": "negarprh:maple-firmware",
+    "company": "Maple Systems",
+    "title": "Firmware Intern",
+    "locations": "Ottawa, ON",
+    "url": "https://jobs.example.com/maple/firmware",
+    "category": "Hardware"
+  },
+  "company": "Maple Systems",
+  "site": null,
+  "searches": {},
+  "contacts": {
+    "recruiters": [],
+    "team": []
+  },
+  "team_label": "People in firmware",
+  "links": {
+    "company": "Maple Systems",
+    "keywords": [
+      "firmware"
+    ],
+    "school": "University of Northfield",
+    "groups": [
+      {
+        "id": "recruiters",
+        "title": "Recruiters",
+        "hint": "Recruiters who hire students. Look for “university”, “campus” or “early careers” in the headline.",
+        "items": [
+          {
+            "label": "University recruiter",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Maple+Systems+university+recruiter",
+            "hint": "Owns intern hiring; the best first contact."
+          },
+          {
+            "label": "Technical recruiter",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Maple+Systems+technical+recruiter",
+            "hint": "Check the headline mentions interns or new grads."
+          },
+          {
+            "label": "Campus recruiting",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Maple+Systems+campus+recruiting",
+            "hint": "Runs career fairs and info sessions."
+          }
+        ]
+      },
+      {
+        "id": "team",
+        "title": "People on the team",
+        "hint": "Engineers doing similar work. Prefer people a year or two out of school.",
+        "items": [
+          {
+            "label": "Firmware",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Maple+Systems+firmware",
+            "hint": "Look for the same team or product in their experience."
+          }
+        ]
+      },
+      {
+        "id": "alumni",
+        "title": "Alumni from your school",
+        "hint": "People who went to your school. Shared background makes a reply more likely.",
+        "items": [
+          {
+            "label": "University of Northfield alumni",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Maple+Systems+University+of+Northfield",
+            "hint": "Use the “School” filter on LinkedIn for University of Northfield."
+          }
+        ],
+        "note": ""
+      },
+      {
+        "id": "google",
+        "title": "Google searches",
+        "hint": "Public pages, for when LinkedIn search is limited.",
+        "items": [
+          {
+            "label": "Recruiter profiles",
+            "url": "https://www.google.com/search?q=site%3Alinkedin.com%2Fin+%22Maple+Systems%22+%22university+recruiter%22",
+            "hint": "Public LinkedIn profiles that mention the company and role."
+          },
+          {
+            "label": "Firmware profiles",
+            "url": "https://www.google.com/search?q=site%3Alinkedin.com%2Fin+%22Maple+Systems%22+%22firmware%22",
+            "hint": "Public profiles of people with this kind of role."
+          },
+          {
+            "label": "Engineering blog",
+            "url": "https://www.google.com/search?q=%22Maple+Systems%22+engineering+blog",
+            "hint": "Recent posts make a good, specific opener."
+          },
+          {
+            "label": "Careers and students page",
+            "url": "https://www.google.com/search?q=%22Maple+Systems%22+careers+students+internships",
+            "hint": "Recruiting contacts, events and timelines."
+          }
+        ]
+      }
+    ]
+  },
+  "configured": true
+}

@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "platform": "greenhouse", "token": "northwind", "name": "Northwind Data", "enabled": 1, "origin": "auto",
+      "added_at": 1788112800, "last_checked": 1791997200, "last_status": "ok", "last_error": null, "jobs_total": 42,
+      "interns": 2, "listings": 2, "board_url": "https://job-boards.greenhouse.io/northwind"
+    },
+    {
+      "platform": "greenhouse", "token": "quillfeather", "name": "Quillfeather Capital", "enabled": 1, "origin": "auto",
+      "added_at": 1788112800, "last_checked": 1791993600, "last_status": "error", "last_error": "TimeoutError: The read operation timed out",
+      "jobs_total": 19, "interns": 1, "listings": 1, "board_url": "https://job-boards.greenhouse.io/quillfeather"
+    },
+    {
+      "platform": "lever", "token": "lumen", "name": "Lumen Health", "enabled": 1, "origin": "manual",
+      "added_at": 1790272800, "last_checked": 1791914400, "last_status": "ok", "last_error": null, "jobs_total": 12,
+      "interns": 1, "listings": 1, "board_url": "https://jobs.lever.co/lumen"
+    },
+    {
+      "platform": "ashby", "token": "polar-labs", "name": "Polar Labs", "enabled": 1, "origin": "auto",
+      "added_at": 1788112800, "last_checked": 1791828000, "last_status": "not_found", "last_error": null, "jobs_total": null,
+      "interns": 0, "listings": 0, "board_url": "https://jobs.ashbyhq.com/polar-labs"
+    },
+    {
+      "platform": "lever", "token": "old-harbor", "name": "Old Harbor", "enabled": 0, "origin": "auto",
+      "added_at": 1788112800, "last_checked": null, "last_status": null, "last_error": null, "jobs_total": null,
+      "interns": null, "listings": 0, "board_url": "https://jobs.lever.co/old-harbor"
+    }
+  ]
+}

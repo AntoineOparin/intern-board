@@ -8,10 +8,12 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import ats, db, jobs, sources
+from . import ats, db, jobs, sites, sources, visa
+from .locations import fold
 from . import ai, contacts, documents, people, postings, profile, ranking  # noqa: F401  (registers AI job handlers)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -57,14 +59,14 @@ async def revalidate_static(request, call_next):
     return response
 
 
-def _listing_filters(q, region, category, term, degree, since, hide_tracked, source=""):
+def _listing_filters(q, region, category, term, degree, since, hide_tracked, source="", sponsorship=""):
     where, args = [db.visible("l")], []
     if source:
         where.append("l.source = ?")
         args.append(source)
-    for word in q.split():
-        where.append("(l.title LIKE ? OR l.company LIKE ? OR l.locations LIKE ?)")
-        args += [f"%{word}%"] * 3
+    for word in q.split():  # accents don't matter: "montreal" finds "Montréal"
+        where.append("(fold(l.title) LIKE ? OR fold(l.company) LIKE ? OR fold(l.locations) LIKE ?)")
+        args += [f"%{fold(word)}%"] * 3
     if region:
         where.append("l.regions LIKE ?")
         args.append(f"%,{region},%")
@@ -80,6 +82,15 @@ def _listing_filters(q, region, category, term, degree, since, hide_tracked, sou
     if since:
         where.append("l.first_seen > ?")
         args.append(since)
+    if sponsorship == "offers":
+        where.append(f"{visa.sql('l')} = ?")
+        args.append(visa.OFFERS)
+    elif sponsorship == "likely":  # also Zapply's estimates
+        where.append(f"{visa.sql('l')} IN (?, ?)")
+        args += [visa.OFFERS, visa.MAYBE]
+    elif sponsorship == "open":  # everything except postings that rule it out
+        where.append(f"COALESCE({visa.sql('l')}, '') NOT IN (?, ?)")
+        args += list(visa.RULED_OUT)
     if hide_tracked:
         where.append("t.listing_id IS NULL")
     return " AND ".join(where), args
@@ -94,12 +105,13 @@ def listings(
     degree: str = "",
     since: int = 0,
     hide_tracked: bool = False,
-    source: Literal["", "simplify", "board", "negarprh", "michelleokolie", "zapply"] = "",
+    source: Literal["", "simplify", "board", "negarprh", "michelleokolie", "frogg", "zapply"] = "",
+    sponsorship: Literal["", "offers", "likely", "open"] = "",
     sort: Literal["posted", "added", "company", "match"] = "posted",
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ):
-    where, args = _listing_filters(q, region, category, term, degree, since, hide_tracked, source)
+    where, args = _listing_filters(q, region, category, term, degree, since, hide_tracked, source, sponsorship)
     order = {"posted": "l.date_posted DESC", "added": "l.first_seen DESC, l.date_posted DESC",
              "company": "l.company COLLATE NOCASE, l.date_posted DESC",
              "match": "m.score IS NULL, m.score DESC, l.date_posted DESC"}[sort]
@@ -116,10 +128,21 @@ def listings(
     return {"total": total, "items": [_listing(r) for r in rows]}
 
 
+SPONSORSHIP_FROM = {"simplify": "From the SimplifyJobs list.",
+                    "zapply": "Zapply's estimate, not a statement from the employer."}
+
+
 def _listing(row) -> dict:
     d = dict(row)
     for key in ("regions", "terms", "degrees"):
         d[key] = [v for v in d[key].split(",") if v]
+    # What the posting says about sponsorship wins over the source list's field.
+    found, quote = d.pop("visa", None), d.pop("visa_quote", None)
+    d.pop("visa_checked", None)
+    d["sponsorship"] = visa.effective(found, d.get("sponsorship"))
+    d["sponsorship_note"] = (f"The posting says: “{quote}”" if found
+                             else SPONSORSHIP_FROM.get(d.get("source", ""), "From the source list.")
+                             if d["sponsorship"] else None)
     return d
 
 
@@ -140,6 +163,8 @@ def meta():
             "terms": counts(_split_counts("terms")),
             "degrees": counts(_split_counts("degrees")),
             "sources": counts(f"SELECT source, COUNT(*) FROM listings WHERE {db.visible()} GROUP BY source"),
+            "sponsorship": counts(f"SELECT {visa.sql('l')}, COUNT(*) FROM listings l WHERE {db.visible('l')} "
+                                  "GROUP BY 1 ORDER BY 2 DESC"),
             "boards": dict(conn.execute(
                 "SELECT COUNT(*) AS total, SUM(enabled) AS enabled, "
                 "SUM(enabled AND interns > 0) AS hiring FROM companies").fetchone()),
@@ -176,7 +201,8 @@ def tracker():
     with db.connect() as conn:
         rows = conn.execute("""
             SELECT t.*, l.company, l.title, l.url, l.locations, l.active, l.date_posted, l.terms,
-                   l.regions, l.degrees, l.category, l.sponsorship, l.first_seen, l.id
+                   l.regions, l.degrees, l.category, l.sponsorship, l.visa, l.visa_quote, l.source,
+                   l.first_seen, l.id
             FROM tracker t JOIN listings l ON l.id = t.listing_id
             ORDER BY t.status, t.position, t.updated_at DESC
         """).fetchall()
@@ -217,8 +243,7 @@ def companies():
             GROUP BY c.platform, c.token
             ORDER BY c.enabled DESC, listings DESC, c.name COLLATE NOCASE
         """).fetchall()
-    return {"items": [{**dict(r), "board_url": ats.BOARD_PAGES[r["platform"]].format(token=r["token"])}
-                      for r in rows]}
+    return {"items": [{**dict(r), "board_url": ats.board_page(r["platform"], r["token"])} for r in rows]}
 
 
 class NewCompany(BaseModel):
@@ -226,25 +251,39 @@ class NewCompany(BaseModel):
     name: str | None = Field(None, max_length=120)
 
 
+NO_BOARD = ("Couldn't find a job board on that page. Open one of the company's job postings and paste its "
+            "link instead. Supported boards: " + ", ".join(v for k, v in ats.PLATFORMS.items() if k != "site")
+            + ", and the career sites of " + ", ".join(s.name for s in sites.SITES.values()) + ".")
+
+
 @app.post("/api/companies")
 def add_company(body: NewCompany):
-    board = ats.parse_board_url(body.url.strip())
+    url, name = body.url.strip(), body.name
+    board = ats.parse_board_url(url)
     if not board:
-        raise HTTPException(422, "Paste a Greenhouse, Lever or Ashby link, like jobs.lever.co/company.")
+        # A careers page (company.com/careers): look for the job board it embeds or links to.
+        try:
+            found = ats.find_board(url)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(502, f"Couldn't open that page: {exc}")
+        if not found:
+            raise HTTPException(422, NO_BOARD)
+        board, name = (found["platform"], found["token"]), name or found["name"]
+    label = sites.SITES[board[1]].name if board[0] == "site" else ats.PLATFORMS[board[0]]
     try:
         with db.connect() as conn:
-            return sources.add_board(conn, *board, body.name)
+            return sources.add_board(conn, *board, name)
     except ats.BoardNotFound:
-        raise HTTPException(404, f"No {board[0].title()} job board called “{board[1]}” exists.")
-    except OSError as exc:
-        raise HTTPException(502, f"Couldn't reach {board[0].title()}: {exc}")
+        raise HTTPException(404, f"No {label} job board called “{board[1]}” exists.")
+    except (OSError, ValueError) as exc:  # ValueError: a reply that couldn't be read
+        raise HTTPException(502, f"Couldn't reach {label}: {exc}")
 
 
 class CompanyUpdate(BaseModel):
     enabled: bool
 
 
-@app.patch("/api/companies/{platform}/{token}")
+@app.patch("/api/companies/{platform}/{token:path}")  # Workday tokens contain "/"
 def update_company(platform: str, token: str, body: CompanyUpdate):
     with db.connect() as conn:
         # Re-enabled boards are checked on the next refresh, without flooding "new".
@@ -300,6 +339,14 @@ def fetch_description(payload: dict) -> dict:
 @app.get("/api/ai/status")
 def ai_status():
     return {"claude": bool(ai.claude_path()), "kinds": sorted(jobs.HANDLERS)}
+
+
+# The frontend is built from frontend/ into static/ (Svelte). It was served at /next/ during the
+# migration; keep old links working.
+@app.get("/next", include_in_schema=False)
+@app.get("/next/", include_in_schema=False)
+def next_app_moved():
+    return RedirectResponse("/")
 
 
 app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")

@@ -1,0 +1,43 @@
+{
+  "last_refresh": 1792000200,
+  "last_error": "",
+  "active": 11,
+  "regions": [
+    { "value": "CA", "count": 5 },
+    { "value": "REMOTE", "count": 3 },
+    { "value": "US", "count": 7 }
+  ],
+  "categories": [
+    { "value": "Software", "count": 5 },
+    { "value": "AI/ML/Data", "count": 3 },
+    { "value": "Hardware", "count": 1 },
+    { "value": "Product", "count": 1 },
+    { "value": "Quant", "count": 1 },
+    { "value": null, "count": 1 }
+  ],
+  "terms": [
+    { "value": "Summer 2027", "count": 8 },
+    { "value": "Winter 2027", "count": 2 },
+    { "value": "Fall 2026", "count": 2 }
+  ],
+  "degrees": [
+    { "value": "Bachelor's", "count": 9 },
+    { "value": "Master's", "count": 2 },
+    { "value": "PhD", "count": 1 }
+  ],
+  "sources": [
+    { "value": "board", "count": 3 },
+    { "value": "michelleokolie", "count": 1 },
+    { "value": "negarprh", "count": 1 },
+    { "value": "simplify", "count": 5 },
+    { "value": "zapply", "count": 1 }
+  ],
+  "sponsorship": [
+    { "value": null, "count": 7 },
+    { "value": "Does Not Offer Sponsorship", "count": 1 },
+    { "value": "May Offer Sponsorship", "count": 1 },
+    { "value": "Offers Sponsorship", "count": 1 },
+    { "value": "U.S. Citizenship is Required", "count": 1 }
+  ],
+  "boards": { "total": 5, "enabled": 4, "hiring": 3 }
+}

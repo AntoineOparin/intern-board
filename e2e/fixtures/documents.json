@@ -1,0 +1,99 @@
+{
+  "list": [
+    {
+      "id": "doc-resume-1", "listing_id": "simplify:acme-swe-27", "kind": "resume", "title": "Resume · Acme Robotics",
+      "profile_version": 7, "created_at": 1791828000, "updated_at": 1791914400, "stale": false,
+      "notes": {
+        "emphasized": ["Put the Python service first because the posting asks for backend experience."],
+        "gaps": ["The posting asks for ROS experience, which your profile doesn't show."],
+        "description_used": true, "checks": []
+      }
+    },
+    {
+      "id": "doc-letter-1", "listing_id": "simplify:acme-swe-27", "kind": "cover_letter", "title": "Cover letter · Acme Robotics",
+      "profile_version": 5, "created_at": 1791568800, "updated_at": 1791568800, "stale": true,
+      "notes": {
+        "drew_on": ["Harbourview Labs internship"], "gaps": [], "description_used": false,
+        "checks": ["The letter is 180 words; aim for 250–350."]
+      }
+    }
+  ],
+  "posting": {
+    "simplify:acme-swe-27": { "source": "api", "fetched_at": 1791914400, "chars": 4210, "available": true }
+  },
+  "resume": {
+    "id": "doc-resume-1", "listing_id": "simplify:acme-swe-27", "kind": "resume", "title": "Resume · Acme Robotics",
+    "profile_version": 7, "created_at": 1791828000, "updated_at": 1791914400, "stale": false,
+    "content": {
+      "header": {
+        "name": "Sam Rivera",
+        "contact": ["Toronto, ON", "555-0142", "sam.rivera@example.com"],
+        "links": [{ "label": "GitHub", "url": "github.com/sam-rivera-example" }]
+      },
+      "education": [
+        {
+          "school": "University of Northfield", "degree": "BASc, Computer Engineering", "location": "Northfield, ON",
+          "dates": "Sep 2023 – May 2028", "details": ["GPA: 3.8"]
+        }
+      ],
+      "experience": [
+        {
+          "source_id": "e-harbour",
+          "organization": "Harbourview Labs", "role": "Software Developer Intern", "location": "Toronto, ON", "dates": "May 2025 – Aug 2025",
+          "bullets": [
+            "Built a Python service that cut report generation from 40 minutes to 6 minutes.",
+            "Wrote integration tests for the service's REST endpoints."
+          ],
+          "refs": [{ "point_id": "p-report", "phrasing": 0 }, { "point_id": "p-tests", "phrasing": 0 }]
+        }
+      ],
+      "projects": [
+        {
+          "source_id": "j-trailmap",
+          "name": "Trailmap", "tech": "TypeScript, Go", "link": "", "dates": "2024",
+          "bullets": ["Built a route planner used by 30 club members."],
+          "refs": [{ "point_id": "p-planner", "phrasing": 0 }]
+        }
+      ],
+      "skills": [
+        { "label": "Languages", "items": ["Python", "Go", "TypeScript"] },
+        { "label": "Tools", "items": ["Git", "Docker"] }
+      ],
+      "awards": ["Dean's list 2024"],
+      "notes": {
+        "emphasized": ["Put the Python service first because the posting asks for backend experience."],
+        "gaps": ["The posting asks for ROS experience, which your profile doesn't show."],
+        "description_used": true,
+        "checks": []
+      }
+    },
+    "listing": { "company": "Acme Robotics", "title": "Software Engineer Intern - Summer 2027", "url": "https://jobs.example.com/acme/swe-27" }
+  },
+  "letter": {
+    "id": "doc-letter-1", "listing_id": "simplify:acme-swe-27", "kind": "cover_letter", "title": "Cover letter · Acme Robotics",
+    "profile_version": 5, "created_at": 1791568800, "updated_at": 1791568800, "stale": true,
+    "content": {
+      "tone": "formal",
+      "header": {
+        "name": "Sam Rivera",
+        "contact": ["Toronto, ON", "555-0142", "sam.rivera@example.com"],
+        "links": []
+      },
+      "date": "October 9, 2026",
+      "recipient": "Acme Robotics hiring team",
+      "greeting": "Dear Acme Robotics hiring team,",
+      "paragraphs": [
+        "Acme's work on warehouse robots needs reliable backend services, and that is the work I want to do next summer.",
+        "At Harbourview Labs in summer 2025 I built a Python service that cut report generation from 40 minutes to 6 minutes.",
+        "I would be glad to talk about the Summer 2027 internship. I am available from May to August 2027."
+      ],
+      "closing": "Sincerely,",
+      "signature": "Sam Rivera",
+      "notes": {
+        "drew_on": ["Harbourview Labs internship"], "gaps": [], "description_used": false,
+        "checks": ["The letter is 61 words; aim for 250–350."]
+      }
+    },
+    "listing": { "company": "Acme Robotics", "title": "Software Engineer Intern - Summer 2027", "url": "https://jobs.example.com/acme/swe-27" }
+  }
+}

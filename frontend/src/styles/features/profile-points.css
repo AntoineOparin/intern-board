@@ -1,0 +1,52 @@
+/* Points editor on the Profile page (pages/profile/PointsEditor.svelte). */
+
+.points-panel { margin-top: 20px; }
+.pe-lede { margin: -8px 0 0; font-size: 13.5px; max-width: 70ch; }
+.pe-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.pe-section { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.pe-section-head + .pe-entry, .pe-section-head + .pe-empty { margin-top: -6px; }
+.pe-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.pe-details .field input { height: 32px; font-size: 13.5px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.pe-details .pe-wide { grid-column: span 2; }
+.pe-entry { border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); display: grid; gap: 10px; padding: 14px 16px; }
+.pe-entry-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pe-entry-head > div:first-child { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.pe-entry-head strong { font-size: 14px; }
+.pe-entry-head .tag { height: 22px; }
+.pe-actions { display: flex; gap: 6px; align-items: center; }
+.pe-small { height: 28px; padding: 0 10px; font-size: 12.5px; }
+.pe-empty { margin: 0; font-size: 13px; }
+.pe-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pe-point { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px 8px; display: grid; gap: 8px; }
+.pe-point-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.pe-phrasings { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pe-phrasing { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.pe-phrasing textarea {
+  width: 100%; min-height: 40px; padding: 7px 10px; resize: vertical; line-height: 1.45; font-size: 13.5px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink);
+}
+.pe-phrasing textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.pe-phrasing-actions { display: flex; align-items: center; gap: 4px; height: 40px; }
+.pe-phrasing-actions .tag { height: 22px; font-size: 11px; }
+.pe-phrasing-actions .link { font-size: 12.5px; white-space: nowrap; padding: 0 4px; }
+.pe-phrasing-actions .icon-btn { width: 28px; height: 28px; }
+.pe-phrasing-actions .icon-btn:disabled { opacity: .35; cursor: default; background: none; }
+.pe-point-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.pe-point-actions .icon-btn { width: 28px; height: 28px; font-size: 14px; }
+.pe-point-actions .icon-btn:disabled { opacity: .35; cursor: default; background: none; }
+.pe-spacer { flex: 1; }
+
+.pe-suggest { border-top: 1px dashed var(--line); padding-top: 8px; display: grid; gap: 6px; font-size: 13px; }
+.pe-suggest .form-msg { flex-basis: auto; }
+.pe-suggest ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pe-suggest li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; background: var(--accent-soft); border-radius: var(--r-sm); padding: 6px 10px; }
+.pe-suggest li p { margin: 0; }
+.pe-suggest-actions { display: flex; gap: 4px; }
+.pe-suggest-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12.5px; }
+.pe-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.pe-foot .form-msg { flex: 1; text-align: right; }
+
+@media (max-width: 720px) {
+  .pe-phrasing { grid-template-columns: 1fr; }
+  .pe-phrasing-actions { height: auto; justify-content: flex-end; }
+}

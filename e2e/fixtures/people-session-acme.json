@@ -1,0 +1,258 @@
+{
+  "listing": {
+    "id": "simplify:acme-swe-27",
+    "company": "Acme Robotics",
+    "title": "Software Engineer Intern - Summer 2027",
+    "locations": "Toronto, ON / Waterloo, ON / Montreal, QC",
+    "url": "https://jobs.example.com/acme/swe-27",
+    "category": "Software"
+  },
+  "company": "Acme Robotics",
+  "site": {
+    "company": "acme robotics",
+    "domain": "acmerobotics.example",
+    "source": "url",
+    "prospeo_name": "Acme Robotics",
+    "logo_url": "https://img.fixture.test/acme.png",
+    "updated_at": 1791828000
+  },
+  "searches": {
+    "recruiters": {
+      "listing_id": "simplify:acme-swe-27",
+      "kind": "recruiters",
+      "domain": "acmerobotics.example",
+      "total": 14,
+      "country_filtered": 1,
+      "searched_at": 1791828000,
+      "stale": false
+    }
+  },
+  "contacts": {
+    "recruiters": [
+      {
+        "listing_id": "simplify:acme-swe-27",
+        "kind": "recruiters",
+        "rank": 0,
+        "title": "University Recruiter",
+        "city": "Toronto",
+        "state": "Ontario",
+        "country": "Canada",
+        "linkedin_url": "https://www.linkedin.com/in/jordan-okafor-example",
+        "email": "jordan.okafor@acmerobotics.example",
+        "email_status": "VERIFIED",
+        "found_at": 1791828000,
+        "source": "prospeo",
+        "email_found_at": 1791828000,
+        "job_change_at": null,
+        "moved_to": null,
+        "location": "Toronto, Ontario",
+        "email_stale": false,
+        "recheck_free": true,
+        "new_in_role": false,
+        "person_id": "pr-jordan",
+        "full_name": "Jordan Okafor"
+      },
+      {
+        "listing_id": "simplify:acme-swe-27",
+        "kind": "recruiters",
+        "rank": 1,
+        "title": "Technical Recruiter",
+        "city": "Waterloo",
+        "state": "Ontario",
+        "country": "Canada",
+        "linkedin_url": "https://www.linkedin.com/in/priya-nair-example",
+        "email": null,
+        "email_status": "VERIFIED",
+        "found_at": 1791828000,
+        "source": "prospeo",
+        "email_found_at": null,
+        "job_change_at": 1788544800,
+        "moved_to": null,
+        "location": "Waterloo, Ontario",
+        "email_stale": false,
+        "recheck_free": false,
+        "new_in_role": true,
+        "person_id": "pr-priya",
+        "full_name": "Priya Nair"
+      },
+      {
+        "listing_id": "simplify:acme-swe-27",
+        "kind": "recruiters",
+        "rank": 2,
+        "title": "Talent Acquisition Partner",
+        "city": "Montreal",
+        "state": "Quebec",
+        "country": "Canada",
+        "linkedin_url": "https://www.linkedin.com/in/alex-moreau-example",
+        "email": "alex.moreau@acmerobotics.example",
+        "email_status": "NO_LONGER_VERIFIED",
+        "found_at": 1791828000,
+        "source": "prospeo",
+        "email_found_at": 1791914400,
+        "job_change_at": null,
+        "moved_to": null,
+        "location": "Montreal, Quebec",
+        "email_stale": false,
+        "recheck_free": true,
+        "new_in_role": false,
+        "person_id": "pr-alex",
+        "full_name": "Alex Moreau"
+      },
+      {
+        "listing_id": "simplify:acme-swe-27",
+        "kind": "recruiters",
+        "rank": 3,
+        "title": "Campus Recruiter",
+        "city": "Toronto",
+        "state": "Ontario",
+        "country": "Canada",
+        "linkedin_url": "https://www.linkedin.com/in/casey-lindqvist-example",
+        "email": "casey.lindqvist@acmerobotics.example",
+        "email_status": "VERIFIED",
+        "found_at": 1783360800,
+        "source": "prospeo",
+        "email_found_at": 1783360800,
+        "job_change_at": null,
+        "moved_to": "Globex Example",
+        "location": "Toronto, Ontario",
+        "email_stale": true,
+        "recheck_free": false,
+        "new_in_role": false,
+        "person_id": "pr-casey",
+        "full_name": "Casey Lindqvist"
+      },
+      {
+        "listing_id": "simplify:acme-swe-27",
+        "kind": "recruiters",
+        "rank": 4,
+        "title": "Recruiting Coordinator",
+        "city": null,
+        "state": null,
+        "country": "Canada",
+        "linkedin_url": null,
+        "email": null,
+        "email_status": "UNAVAILABLE",
+        "found_at": 1791828000,
+        "source": "prospeo",
+        "email_found_at": null,
+        "job_change_at": null,
+        "moved_to": null,
+        "location": "Canada",
+        "email_stale": false,
+        "recheck_free": false,
+        "new_in_role": false,
+        "person_id": "pr-morgan",
+        "full_name": "Morgan Blake"
+      },
+      {
+        "listing_id": "simplify:acme-swe-27",
+        "kind": "recruiters",
+        "rank": 5,
+        "title": "University Recruiter",
+        "city": null,
+        "state": null,
+        "country": null,
+        "linkedin_url": "https://linkedin.com/in/taylor-brooks-example",
+        "email": "taylor.brooks@example.org",
+        "email_status": "ADDED",
+        "found_at": 1791914400,
+        "source": "manual",
+        "email_found_at": null,
+        "job_change_at": null,
+        "moved_to": null,
+        "location": "",
+        "email_stale": false,
+        "recheck_free": false,
+        "new_in_role": false,
+        "person_id": "manual:3f9a0c1d2e4b",
+        "full_name": "Taylor Brooks"
+      }
+    ],
+    "team": []
+  },
+  "team_label": "Software engineers",
+  "links": {
+    "company": "Acme Robotics",
+    "keywords": [
+      "software engineer"
+    ],
+    "school": "University of Northfield",
+    "groups": [
+      {
+        "id": "recruiters",
+        "title": "Recruiters",
+        "hint": "Recruiters who hire students. Look for “university”, “campus” or “early careers” in the headline.",
+        "items": [
+          {
+            "label": "University recruiter",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Acme+Robotics+university+recruiter",
+            "hint": "Owns intern hiring; the best first contact."
+          },
+          {
+            "label": "Technical recruiter",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Acme+Robotics+technical+recruiter",
+            "hint": "Check the headline mentions interns or new grads."
+          },
+          {
+            "label": "Campus recruiting",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Acme+Robotics+campus+recruiting",
+            "hint": "Runs career fairs and info sessions."
+          }
+        ]
+      },
+      {
+        "id": "team",
+        "title": "People on the team",
+        "hint": "Engineers doing similar work. Prefer people a year or two out of school.",
+        "items": [
+          {
+            "label": "Software engineer",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Acme+Robotics+software+engineer",
+            "hint": "Look for the same team or product in their experience."
+          }
+        ]
+      },
+      {
+        "id": "alumni",
+        "title": "Alumni from your school",
+        "hint": "People who went to your school. Shared background makes a reply more likely.",
+        "items": [
+          {
+            "label": "University of Northfield alumni",
+            "url": "https://www.linkedin.com/search/results/people/?keywords=Acme+Robotics+University+of+Northfield",
+            "hint": "Use the “School” filter on LinkedIn for University of Northfield."
+          }
+        ],
+        "note": ""
+      },
+      {
+        "id": "google",
+        "title": "Google searches",
+        "hint": "Public pages, for when LinkedIn search is limited.",
+        "items": [
+          {
+            "label": "Recruiter profiles",
+            "url": "https://www.google.com/search?q=site%3Alinkedin.com%2Fin+%22Acme+Robotics%22+%22university+recruiter%22",
+            "hint": "Public LinkedIn profiles that mention the company and role."
+          },
+          {
+            "label": "Software engineer profiles",
+            "url": "https://www.google.com/search?q=site%3Alinkedin.com%2Fin+%22Acme+Robotics%22+%22software+engineer%22",
+            "hint": "Public profiles of people with this kind of role."
+          },
+          {
+            "label": "Engineering blog",
+            "url": "https://www.google.com/search?q=%22Acme+Robotics%22+engineering+blog",
+            "hint": "Recent posts make a good, specific opener."
+          },
+          {
+            "label": "Careers and students page",
+            "url": "https://www.google.com/search?q=%22Acme+Robotics%22+careers+students+internships",
+            "hint": "Recruiting contacts, events and timelines."
+          }
+        ]
+      }
+    ]
+  },
+  "configured": true
+}

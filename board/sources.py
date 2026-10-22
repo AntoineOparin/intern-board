@@ -1,21 +1,23 @@
 """Fetch internship listings and store the US/Canada ones.
 
-Two sources:
-- the community-maintained SimplifyJobs list (one JSON file), and
-- company job boards on Greenhouse, Lever and Ashby (the watchlist), read directly.
+Three kinds of source:
+- the community-maintained SimplifyJobs list (one JSON file),
+- company job boards (the watchlist, see board/ats.py for the platforms), read directly, and
+- other community lists on GitHub (board/community.py).
 
-A posting found in both is kept once, from the SimplifyJobs list.
+A posting found in several is kept once, from the SimplifyJobs list if it's there.
 """
 
 import collections
 import json
 import logging
+import re
 import threading
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from . import ats, community, db
+from . import ats, community, db, employers, montreal, sites, visa
 from .locations import classify
 
 log = logging.getLogger(__name__)
@@ -25,6 +27,8 @@ SIMPLIFY_URL = ("https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Inter
 # Boards whose last community-listed internship is older than this are not auto-added.
 AUTO_BOARD_MAX_AGE = 540 * 86400
 BOARD_WORKERS = 6
+# Workable rate-limits quickly; read its boards one at a time.
+_one_at_a_time = {"workable": threading.Semaphore(1)}
 # Boards with matching internships are checked every refresh (hourly); the rest less often.
 QUIET_BOARD_INTERVAL = 6 * 3600
 
@@ -109,21 +113,40 @@ def simplify_listings(raw: list[dict]) -> list[dict]:
     return listings
 
 
-def seed_companies(conn, raw: list[dict], now: int) -> int:
-    """Add every Greenhouse/Lever/Ashby board the community list has linked to recently."""
+def board_names(items, now: int) -> dict[tuple, collections.Counter]:
+    """{(platform, token): company names} for the job boards that `items` link to recently.
+
+    `items` are (url, company, locations, date posted). Workday boards count only for Canadian
+    internships: there are over a thousand of them, and the SimplifyJobs list covers the US ones well.
+    """
     names: dict[tuple, collections.Counter] = collections.defaultdict(collections.Counter)
-    for item in raw:
-        if (item.get("date_posted") or 0) < now - AUTO_BOARD_MAX_AGE:
+    for url, company, locations, posted in items:
+        if posted and posted < now - AUTO_BOARD_MAX_AGE:
             continue
-        board = ats.parse_board_url(item.get("url", ""))
-        if board:
-            names[board][item.get("company_name", "").strip() or board[1]] += 1
+        board = ats.parse_board_url(url or "")
+        if not board or board[0] == "workday" and not any("CA" in classify(l) for l in locations):
+            continue
+        names[board][(company or "").strip() or board[1]] += 1
+    return names
+
+
+def add_companies(conn, names: dict[tuple, collections.Counter], now: int) -> int:
+    """Add boards to the watchlist (ones already there, or turned off, are left alone)."""
     before = conn.total_changes
     conn.executemany(
         "INSERT INTO companies (platform, token, name, origin, added_at) VALUES (?, ?, ?, 'auto', ?) "
         "ON CONFLICT (platform, token) DO NOTHING",
         [(p, t, c.most_common(1)[0][0], now) for (p, t), c in names.items()])
     return conn.total_changes - before
+
+
+def seed_companies(conn, raw: list[dict], now: int) -> int:
+    """Add the boards the SimplifyJobs list has linked to recently, and the Montreal and employers lists."""
+    names = board_names(((i.get("url"), i.get("company_name"), i.get("locations") or [], i.get("date_posted"))
+                         for i in raw if not (i.get("date_posted") or 0) < now - AUTO_BOARD_MAX_AGE), now)
+    for platform, token, name in montreal.BOARDS + employers.BOARDS:
+        names[(platform, token)][name] += 1000  # our name for it wins
+    return add_companies(conn, names, now)
 
 
 # ---------- company boards ----------
@@ -152,9 +175,15 @@ def board_listings(company: dict, jobs: list[dict]) -> list[dict]:
 
 
 def _fetch_one(company: dict) -> dict:
+    gate = _one_at_a_time.get(company["platform"])
     try:
-        jobs, size = ats.fetch_board(company["platform"], company["token"])
-        return {"company": company, "status": "ok", "jobs": jobs, "bytes": size}
+        if gate:
+            with gate:
+                jobs, size, total = ats.fetch_board(company["platform"], company["token"])
+                time.sleep(1)
+        else:
+            jobs, size, total = ats.fetch_board(company["platform"], company["token"])
+        return {"company": company, "status": "ok", "jobs": jobs, "bytes": size, "total": total}
     except ats.BoardNotFound:
         return {"company": company, "status": "not_found"}
     except Exception as exc:  # network errors, bad JSON: keep the old listings
@@ -188,7 +217,7 @@ def sync_boards(conn, companies: list[dict], skip_keys: set[str], now: int) -> d
         conn.executemany("UPDATE listings SET active = 0 WHERE id = ?", [(i,) for i in existing - current])
         conn.execute("UPDATE companies SET last_checked = ?, last_status = 'ok', last_error = NULL, "
                      "jobs_total = ?, interns = ? WHERE platform = ? AND token = ?",
-                     (now, len(r["jobs"]), len(listings), c["platform"], c["token"]))
+                     (now, r["total"], len(listings), c["platform"], c["token"]))
         stats["kept"] += len(listings)
         stats["new"] += sum(1 for l in listings if l["id"] not in existing
                             and first_seen_for(l["date_posted"], now) == now)
@@ -227,7 +256,10 @@ def active_simplify_keys(conn) -> set[str]:
 # ---------- other community lists ----------
 
 def sync_community(conn, now: int) -> dict:
-    """Fetch the other GitHub lists; skip internships a higher-priority source already has."""
+    """Fetch the other GitHub lists; skip internships a higher-priority source already has.
+
+    The job boards their Canadian internships link to join the watchlist.
+    """
     active = conn.execute("SELECT source, company, title, posting_key FROM listings WHERE active = 1").fetchall()
     stats = {}
     for source in community.SOURCES:
@@ -252,10 +284,12 @@ def sync_community(conn, now: int) -> dict:
         active = [r for r in active if r["source"] != source] + [
             {"source": source, "company": l["company"], "title": l["title"], "posting_key": l["posting_key"]}
             for l in unique]
+        boards = board_names(((l["url"], l["company"], ["Canada"], l["date_posted"])
+                              for l in listings if ",CA," in l["regions"]), now)
         stats[source] = {"listed": len(listings), "kept": len(unique),
                          "new": sum(1 for l in unique if l["id"] not in was_active
                                     and first_seen_for(l["date_posted"], now) == now),
-                         "closed": len(was_active - current)}
+                         "closed": len(was_active - current), "boards_added": add_companies(conn, boards, now)}
     db.set_meta(conn, "community_status", json.dumps({**stats, "checked_at": now}))
     return stats
 
@@ -303,6 +337,7 @@ def refresh(all_boards: bool = False) -> dict:
                   "seconds": round(time.time() - started, 1)}
         result["new"] += result["board_new"] + sum(o.get("new", 0) for o in others.values())
         log.info("refresh: %s", result)
+        visa.check_in_background()  # read new US postings for what they say about sponsorship
         return result
     except Exception as exc:
         log.exception("refresh failed")
@@ -315,13 +350,14 @@ def refresh(all_boards: bool = False) -> dict:
 
 def add_board(conn, platform: str, token: str, name: str | None) -> dict:
     """Validate and add a board by hand, then sync it right away."""
-    jobs, _ = ats.fetch_board(platform, token)  # raises BoardNotFound
+    jobs, _, total = ats.fetch_board(platform, token)  # raises BoardNotFound
     now = int(time.time())
-    name = (name or "").strip() or token.replace("-", " ").title()
+    name = (name or "").strip() or (sites.SITES[token].name if platform == "site"
+                                     else re.split(r"[./]", token)[0].replace("-", " ").title())
     conn.execute("INSERT INTO companies (platform, token, name, origin, added_at) VALUES (?, ?, ?, 'manual', ?) "
                  "ON CONFLICT (platform, token) DO UPDATE SET enabled = 1, name = excluded.name",
                  (platform, token, name, now))
     company = dict(conn.execute("SELECT * FROM companies WHERE platform = ? AND token = ?",
                                 (platform, token)).fetchone())
     stats = sync_boards(conn, [company], active_simplify_keys(conn), now)
-    return {**company, "kept": stats.get("kept", 0), "jobs_total": len(jobs)}
+    return {**company, "kept": stats.get("kept", 0), "jobs_total": total}

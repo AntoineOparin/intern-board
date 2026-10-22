@@ -1,0 +1,16 @@
+{
+  "ok": {
+    "configured": true, "masked": "pk_te…7f3a", "plan": "FREE", "remaining": 57, "used": 43,
+    "renews": "2026-11-01T00:00:00", "low": false, "empty": false
+  },
+  "low": {
+    "configured": true, "masked": "pk_te…7f3a", "plan": "FREE", "remaining": 4, "used": 96,
+    "renews": "2026-11-01T00:00:00", "low": true, "empty": false
+  },
+  "empty": {
+    "configured": true, "masked": "pk_te…7f3a", "plan": "FREE", "remaining": 0, "used": 100,
+    "renews": "2026-11-01T00:00:00", "low": true, "empty": true
+  },
+  "not_configured": { "configured": false },
+  "error": { "configured": true, "error": "Prospeo returned HTTP 401." }
+}
