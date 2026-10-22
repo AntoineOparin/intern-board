@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from board import ats, db, montreal, sources
+from board import ats, db, employers, montreal, sources
 
 NOW = int(time.time())
 
@@ -21,11 +21,12 @@ class BoardNamesTest(unittest.TestCase):
         ], NOW)
         self.assertEqual(set(names), {("workday", "cae.wd3/career"), ("smartrecruiters", "acme")})
 
-    def test_montreal_boards_parse_back_to_themselves(self):
-        for platform, token, name in montreal.BOARDS:
-            self.assertIn(platform, ats.PLATFORMS, name)
-            self.assertEqual(ats.parse_board_url(ats.board_page(platform, token)), (platform, token), name)
-        self.assertEqual(len({(p, t) for p, t, _ in montreal.BOARDS}), len(montreal.BOARDS))
+    def test_listed_boards_parse_back_to_themselves(self):
+        for boards in (montreal.BOARDS, employers.BOARDS):
+            for platform, token, name in boards:
+                self.assertIn(platform, ats.PLATFORMS, name)
+                self.assertEqual(ats.parse_board_url(ats.board_page(platform, token)), (platform, token), name)
+            self.assertEqual(len({(p, t) for p, t, _ in boards}), len(boards))
 
 
 class SyncBoardsTest(unittest.TestCase):

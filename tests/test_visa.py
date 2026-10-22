@@ -142,6 +142,24 @@ class ListingsTest(unittest.TestCase):
                                                 "posting_key": None, "board": None}), "We cannot sponsor visas.")
         self.assertEqual(seen, ["https://acme.wd5.myworkdayjobs.com/wday/cxs/acme/ext/job/X/Intern_R1"])
 
+    def test_oracle_and_icims_postings_are_read(self):
+        oracle = {"id": "o", "url": "https://hdks.fa.ca2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/9412",
+                  "posting_key": None, "board": None}
+        seen = []
+        with mock.patch.object(postings, "_get_json", side_effect=lambda url: seen.append(url) or {"items": [
+                {"ExternalDescriptionStr": "<p>Co-op term.</p>", "ExternalQualificationsStr": "<p>No sponsorship.</p>"}]}):
+            self.assertEqual(postings.api_text(oracle), "Co-op term.\n\nNo sponsorship.")
+        self.assertEqual(seen, ["https://hdks.fa.ca2.oraclecloud.com/hcmRestApi/resources/latest/"
+                                "recruitingCEJobRequisitionDetails?expand=all&onlyData=true"
+                                "&finder=ById;Id=%229412%22,siteNumber=CX_1"])
+        icims = {"id": "i", "url": "https://careers-kinaxis.icims.com/jobs/35572/job", "posting_key": None, "board": None}
+        page = '<script type="application/ld+json">{"@type": "JobPosting", "description": "<p>We sponsor visas.</p>"}</script>'
+        with mock.patch.object(postings.ats, "_request_page", return_value=(page, 100)) as get:
+            self.assertEqual(postings.api_text(icims), "We sponsor visas.")
+        get.assert_called_once_with("https://careers-kinaxis.icims.com/jobs/35572/job?in_iframe=1")
+        with mock.patch.object(postings.ats, "_request_page", side_effect=postings.ats.BoardNotFound("gone")):
+            self.assertIsNone(postings.api_text(icims))
+
     def test_network_errors_are_retried(self):
         with mock.patch.object(postings, "api_text", side_effect=TimeoutError):
             self.assertEqual(visa.check_pending()["failed"], 3)

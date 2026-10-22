@@ -87,6 +87,8 @@ def _country(place: str) -> str | None:
     if len(parts) >= 2 and _TRAILING_CODE.fullmatch(", " + last.upper()):
         # "City, XX" or "Area, City, XX": "CA" here is California, unless the city is Canadian.
         code = last.upper()
+        if code == "US":  # "Poughkeepsie, US"
+            return "US"
         if code == "CA" and (_city(parts[-2]) == "CA" or parts[-2].strip().upper() in CA_PROVINCES):
             return "CA"  # "Montreal, CA", "Toronto, ON, CA"
         return "US" if code in US_STATES else "CA" if code in CA_PROVINCES else None
@@ -95,6 +97,8 @@ def _country(place: str) -> str | None:
         return "US"
     if len(parts) >= 2 and last in CA_NAMES:  # "Toronto, Ontario", "Montréal, Québec"
         return "CA"
+    if len(parts) >= 2 and last in {"united states", "united states of america", "usa", "u.s."}:  # "Austin, USA"
+        return "US"
     if len(parts) >= 3:  # "City, Region, Country"
         return "US" if last in US_ALIASES | {"united states of america"} else "CA" if last == "can" else None
     if text in US_ALIASES or text in US_NAMES or text.removeprefix("south ") in US_ALIASES:

@@ -10,6 +10,7 @@
   const PLATFORMS: Record<Platform, string> = {
     greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby", workday: "Workday", smartrecruiters: "SmartRecruiters",
     workable: "Workable", bamboohr: "BambooHR", rippling: "Rippling", breezy: "Breezy", recruiterbox: "Recruiterbox",
+    oracle: "Oracle Cloud", icims: "iCIMS", site: "Company site",
   };
 
   let q = $state("");

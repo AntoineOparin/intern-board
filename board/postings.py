@@ -1,8 +1,7 @@
 """Full job descriptions, fetched on demand and cached.
 
-Postings on Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, BambooHR, Rippling and
-Recruiterbox come from their public APIs. Anything else (iCIMS, Oracle, company sites) is read by
-Claude with its WebFetch tool, which can fail on pages that need JavaScript or a login; callers
+Postings on the job boards ats.py reads, and on the career sites in sites.py, come from their
+public APIs or pages. Anything else (other company sites) is read by Claude with its WebFetch tool, which can fail on pages that need JavaScript or a login; callers
 should then ask the user to paste the description.
 """
 
@@ -15,7 +14,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
-from . import ai, ats, db
+from . import ai, ats, db, sites
 
 MAX_CHARS = 12_000
 CACHE_DAYS = 14
@@ -93,11 +92,15 @@ def api_text(listing: dict, cache: dict | None = None) -> str | None:
     board = _board(listing)
     kind, _, ident = key.partition(":")
     try:
+        if kind == "gh" and not (board and board[0] == "greenhouse"):
+            # An embed link without the board's name, or a company site passing the ID along (?gh_jid=…):
+            # Greenhouse's embed page redirects to a link that has the name.
+            board = ats.parse_board_url(_resolve(f"https://boards.greenhouse.io/embed/job_app?token={ident}"))
         if kind == "gh" and board and board[0] == "greenhouse":
             return _plain(_get_json(f"https://boards-api.greenhouse.io/v1/boards/{board[1]}/jobs/{ident}")
                           .get("content", ""))
         if kind == "lever" and board:
-            data = _get_json(f"https://api.lever.co/v0/postings/{board[1]}/{ident}")
+            data = _get_json(f"{ats.lever_api(board[1])}/{ident}")
             parts = [data.get("descriptionPlain") or ""]
             parts += [f"{l.get('text', '')}:\n{_plain(l.get('content', ''))}" for l in data.get("lists", [])]
             parts.append(data.get("additionalPlain") or "")
@@ -135,6 +138,35 @@ def api_text(listing: dict, cache: dict | None = None) -> str | None:
         if kind == "rbox" and board:
             data = _get_json(f"https://jsapi.recruiterbox.com/v1/openings/{ident}?client_name={board[1]}")
             return _plain(data.get("description", "")) or None
+        if kind == "oracle" and board and board[0] == "oracle":
+            base, _, site = ats.oracle_site(board[1])
+            job_id = ident.rpartition(":")[2]
+            data = _get_json(f"{base}/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails"
+                             f"?expand=all&onlyData=true&finder=ById;Id=%22{job_id}%22,siteNumber={site}")
+            job = (data.get("items") or [{}])[0]
+            parts = [job.get(k) for k in ("ExternalDescriptionStr", "ExternalResponsibilitiesStr",
+                                          "ExternalQualificationsStr")]
+            return _plain("\n\n".join(p for p in parts if p)) or None
+        if kind == "icims":
+            sub, _, job_id = ident.partition(":")
+            page, _ = ats._request_page(f"https://{sub}.icims.com/jobs/{job_id}/job?in_iframe=1")
+            return _plain((ats.ld_job(page) or {}).get("description", "")) or None
+        if kind == "jibe":
+            host, _, job_id = ident.rpartition(":")
+            return _plain(ats.jibe_text(host, job_id) or "") or None
+        if kind == "sf":
+            return _plain(ats.successfactors_text(url) or "") or None
+        if kind == "eightfold" and board and board[0] == "eightfold":
+            return _plain(ats.eightfold_text(board[1], ident) or "") or None
+        if kind == "avature":
+            return _plain(ats.avature_text(url) or "") or None
+        if kind == "jazz" and board and board[0] == "jazzhr":
+            job = next((j for j in ats.jazzhr_feed(board[1])[0] if f"/apply/{ident}" in (j.get("url") or "")), None)
+            return _plain(job.get("description", "")) or None if job else None
+        if kind in sites.SITES:
+            return _plain(sites.text(kind, ident) or "") or None
+    except ats.BoardNotFound:  # iCIMS answers 404 for a posting that was taken down
+        return None
     except urllib.error.HTTPError as exc:
         if exc.code in (403, 404, 410):  # the posting was taken down (Workday answers 403)
             return None

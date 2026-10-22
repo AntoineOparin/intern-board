@@ -17,7 +17,7 @@ import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from . import ats, community, db, montreal, visa
+from . import ats, community, db, employers, montreal, sites, visa
 from .locations import classify
 
 log = logging.getLogger(__name__)
@@ -141,10 +141,10 @@ def add_companies(conn, names: dict[tuple, collections.Counter], now: int) -> in
 
 
 def seed_companies(conn, raw: list[dict], now: int) -> int:
-    """Add the boards the SimplifyJobs list has linked to recently, and the Montreal list."""
+    """Add the boards the SimplifyJobs list has linked to recently, and the Montreal and employers lists."""
     names = board_names(((i.get("url"), i.get("company_name"), i.get("locations") or [], i.get("date_posted"))
                          for i in raw if not (i.get("date_posted") or 0) < now - AUTO_BOARD_MAX_AGE), now)
-    for platform, token, name in montreal.BOARDS:
+    for platform, token, name in montreal.BOARDS + employers.BOARDS:
         names[(platform, token)][name] += 1000  # our name for it wins
     return add_companies(conn, names, now)
 
@@ -352,7 +352,8 @@ def add_board(conn, platform: str, token: str, name: str | None) -> dict:
     """Validate and add a board by hand, then sync it right away."""
     jobs, _, total = ats.fetch_board(platform, token)  # raises BoardNotFound
     now = int(time.time())
-    name = (name or "").strip() or re.split(r"[./]", token)[0].replace("-", " ").title()
+    name = (name or "").strip() or (sites.SITES[token].name if platform == "site"
+                                     else re.split(r"[./]", token)[0].replace("-", " ").title())
     conn.execute("INSERT INTO companies (platform, token, name, origin, added_at) VALUES (?, ?, ?, 'manual', ?) "
                  "ON CONFLICT (platform, token) DO UPDATE SET enabled = 1, name = excluded.name",
                  (platform, token, name, now))

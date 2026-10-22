@@ -12,7 +12,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import ats, db, jobs, sources, visa
+from . import ats, db, jobs, sites, sources, visa
 from .locations import fold
 from . import ai, contacts, documents, people, postings, profile, ranking  # noqa: F401  (registers AI job handlers)
 
@@ -252,7 +252,8 @@ class NewCompany(BaseModel):
 
 
 NO_BOARD = ("Couldn't find a job board on that page. Open one of the company's job postings and paste its "
-            "link instead. Supported boards: " + ", ".join(ats.PLATFORMS.values()) + ".")
+            "link instead. Supported boards: " + ", ".join(v for k, v in ats.PLATFORMS.items() if k != "site")
+            + ", and the career sites of " + ", ".join(s.name for s in sites.SITES.values()) + ".")
 
 
 @app.post("/api/companies")
@@ -268,13 +269,13 @@ def add_company(body: NewCompany):
         if not found:
             raise HTTPException(422, NO_BOARD)
         board, name = (found["platform"], found["token"]), name or found["name"]
-    label = ats.PLATFORMS[board[0]]
+    label = sites.SITES[board[1]].name if board[0] == "site" else ats.PLATFORMS[board[0]]
     try:
         with db.connect() as conn:
             return sources.add_board(conn, *board, name)
     except ats.BoardNotFound:
         raise HTTPException(404, f"No {label} job board called “{board[1]}” exists.")
-    except OSError as exc:
+    except (OSError, ValueError) as exc:  # ValueError: a reply that couldn't be read
         raise HTTPException(502, f"Couldn't reach {label}: {exc}")
 
 

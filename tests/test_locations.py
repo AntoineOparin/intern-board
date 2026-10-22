@@ -7,7 +7,9 @@ class ClassifyTest(unittest.TestCase):
     def test_us(self):
         for loc in ["NYC", "SF", "LA", "San Jose, CA", "Austin, TX", "United States", "Utah", "Illinois",
                     "Washington, DC", "Boston, MA, USA", "South SF", "Carlsbad, Ca",
-                    "Arlington County, Arlington, VA", "Long Island City, Queens, NY"]:
+                    "Arlington County, Arlington, VA", "Long Island City, Queens, NY",
+                    # City and country only, as some career sites write it
+                    "New York, United States", "Poughkeepsie, US", "Chicago, USA", "Austin, United States of America"]:
             self.assertEqual(classify(loc), {"US"}, loc)
 
     def test_canada(self):
@@ -38,7 +40,7 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(classify("Remote in Germany"), set())
 
     def test_elsewhere(self):
-        for loc in ["London, UK", "Berlin, Germany", "Bangalore, KA, India", "Paris, France"]:
+        for loc in ["London, UK", "Berlin, Germany", "Bangalore, KA, India", "Paris, France", "London, United Kingdom"]:
             self.assertEqual(classify(loc), set(), loc)
 
     def test_multi(self):

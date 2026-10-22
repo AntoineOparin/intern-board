@@ -27,6 +27,7 @@ BOARDS = [
     ("workday", "cdpq.wd10/cdpq", "CDPQ"),
     ("workday", "cdpq.wd10/cdpq-recrutement-universitaire", "CDPQ"),
     ("lever", "eqbank", "EQ Bank"),
+    ("avature", "emplois.bnc.ca/en_CA/careers", "National Bank of Canada"),
     # Finance and trading tech
     ("recruiterbox", "tsimagine", "TS Imagine"),
     ("greenhouse", "drwfr", "DRW"),

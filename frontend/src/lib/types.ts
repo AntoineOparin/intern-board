@@ -120,7 +120,7 @@ export interface TrackerUpdate {
 // ---------- companies (main.py) ----------
 
 export type Platform = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters" | "workable" | "bamboohr"
-  | "rippling" | "breezy" | "recruiterbox";
+  | "rippling" | "breezy" | "recruiterbox" | "oracle" | "icims" | "site";
 
 export interface Company {
   platform: Platform;
