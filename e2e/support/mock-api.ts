@@ -14,7 +14,7 @@ export const fixture = <T = any>(name: string): T => JSON.parse(readFileSync(FIX
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
 
 export type Req = { method: string; path: string; query: Record<string, string>; body: any; raw: string | null };
-export type Reply = { status?: number; json?: unknown };
+export type Reply = { status?: number; json?: unknown; file?: { body: string; contentType: string; name: string } };
 type Handler = (req: Req, api: MockApi) => Reply | Promise<Reply>;
 export type JobOutcome = { status: "done" | "error"; result?: any; error?: string; polls?: number };
 
@@ -161,6 +161,11 @@ export class MockApi {
       this.unexpected.push(`${req.method} ${url.pathname}${url.search} (no mock)`);
       reply = { status: 501, json: { detail: "Not mocked" } };
     }
+    if (reply.file) {
+      const { body, contentType, name } = reply.file;
+      await route.fulfill({ status: reply.status ?? 200, contentType, body, headers: { "content-disposition": `attachment; filename="${name}"` } });
+      return;
+    }
     await route.fulfill({ status: reply.status ?? 200, contentType: "application/json", body: JSON.stringify(reply.json ?? null) });
   }
 
@@ -241,6 +246,11 @@ export class MockApi {
     }
     if (m === "GET" && (x = p.match(/^\/api\/documents\/posting\/(.+)$/))) {
       return { json: this.postings[x[1]] ?? { available: false, source: null, fetched_at: null, chars: 0 } };
+    }
+    if (m === "GET" && (x = p.match(/^\/api\/documents\/([^/]+)\/docx$/))) {
+      if (!this.docs[x[1]]) return detail(404, "That document doesn't exist.");
+      const type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      return { file: { body: "not a real .docx", contentType: type, name: `${x[1]}.docx` } };
     }
     if ((x = p.match(/^\/api\/documents\/([^/]+)$/))) {
       const doc = this.docs[x[1]];

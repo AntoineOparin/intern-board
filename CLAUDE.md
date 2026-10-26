@@ -14,12 +14,13 @@ A personal, local web app: software and tech internships in Canada and the US, a
   - `jobs.py`: background AI jobs. The browser starts one and polls it.
   - `profile.py`: resume upload and extraction, preferences, and the points model: each experience or project bullet is a point with one or more phrasings (`normalize()` converts legacy `bullets`; `flat_data()` is what prompts other than tailoring see). A re-upload merges (`merge_profile`), `suggest_phrasings` is the job behind "Suggest variations", and `version` bumps only when facts change, never for an extra phrasing.
   - `postings.py`: full job descriptions (job-board APIs, or Claude WebFetch).
-  - Features: `ranking.py`, `documents.py` (tailored resume, cover letter), `people.py` (search links, outreach job), `outreach.py` (writing chain: brief → write → check → repair), `contacts.py` (Find People via Prospeo), `prospeo.py` (API client), `settings.py` (`.env`).
+  - Features: `ranking.py`, `documents.py` (tailored resume, cover letter; edits may add formatting: runs inside lines, `format`, `headings`, validated on save), `docx_export.py` (the Word file, standard library only), `people.py` (search links, outreach job), `outreach.py` (writing chain: brief → write → check → repair), `contacts.py` (Find People via Prospeo), `prospeo.py` (API client), `settings.py` (`.env`).
 - **Frontend:** Svelte 5 + TypeScript + Vite in `frontend/`. It builds into `board/static/`, which FastAPI serves at `/`. The build is committed so `./run.sh` needs only Python. **Never edit `board/static/` by hand**; it's overwritten by every build.
   - `src/lib/api.ts`: typed client for every endpoint, plus `runJob()` (polling, 10-minute limit). `src/lib/types.ts`: response shapes.
   - `src/lib/stores/`: shared state (router, filters, board, meta, tracker, profile, ranking, companies, credits, people, documents, drawer, toast). State that must survive leaving a page, such as running AI jobs or polling loops, lives here, not in components.
   - `src/lib/components/`: `Select` (accessible custom dropdown), `Drawer` (tracker side panel), `Sidebar`, `Toast`, `Icon`.
-  - `src/pages/`: board, tracker, companies, documents (tool pages and the Documents section), people (Find People), profile, doc (`doc.html`, a second Vite entry).
+  - `src/pages/`: board, tracker, companies, documents (tool pages and the Documents section), people (Find People), profile, doc (`doc.html`, a second Vite entry, with `FormatBar` and the `editable` action).
+  - `src/lib/richtext.ts`: formatted lines on the document page. A line is a string, or runs (`{t, b, i, u, c}`) when part of it is formatted. Unformatted lines are saved as plain strings, so older documents keep working. Styles are keyed by content path (`experience.0.bullets.2`).
   - `src/styles/`: `style.css` (tokens at the top) and per-feature styles.
   - After a change, run `npm run check`, `npm test` and `npm run build` in `frontend/`, and commit the build with the source.
 - **Tests:** stdlib `unittest` in `tests/`. Run them with `.venv/bin/python -m unittest`. Claude and Prospeo are always mocked.

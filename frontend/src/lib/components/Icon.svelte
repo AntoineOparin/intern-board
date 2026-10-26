@@ -22,6 +22,15 @@
     back: '<path d="M15 6l-6 6 6 6"/>',
     chevron: '<path d="m9 6 6 6-6 6"/>',
     swap: '<path d="M7 4v13m0 0-3-3m3 3 3-3M17 20V7m0 0-3 3m3-3 3 3"/>',
+    undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+    redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+    alignLeft: '<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>',
+    alignCenter: '<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>',
+    alignRight: '<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>',
+    alignJustify: '<path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>',
+    blankLine: '<path d="M4 4.5h16M4 19.5h16M12 8v8M9.5 10.5 12 8l2.5 2.5M9.5 13.5 12 16l2.5-2.5"/>',
+    clearFormat: '<path d="M5 6h11M10.5 6l-3 12M14 14l6 6M20 14l-6 6"/>',
+    page: '<rect x="5.5" y="3.5" width="13" height="17" rx="1.5"/><path d="M8.5 7h7M8.5 10.5h7M8.5 14h4.5"/>',
   } as const;
   export type IconName = keyof typeof ICONS;
 </script>

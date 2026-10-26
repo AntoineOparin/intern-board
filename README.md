@@ -50,8 +50,16 @@ These run through the Claude Code CLI on your Mac (`claude -p`), using the Claud
    - **Experience and project points:** each bullet from your resume becomes a point (one fact) that can have several phrasings, and an entry can hold more points than fit on one page. Add experiences, projects, points and phrasings yourself, or click **Suggest variations** for Claude's take on other ways to say the same thing; suggestions that change a number or add a claim are dropped, and nothing is added until you keep it. Uploading a new resume keeps your points and adds the new bullets, but replaces skills, education and awards.
 2. **Ranking:** every listing gets a quick keyword match score, which takes milliseconds. Under **Profile → Ranking**, "Rank top 40 with Claude" adds a one-sentence reason to each of the top 40. On the board, sort by **Best match**, and click a score to see why.
 3. **Tracker side panel → Documents:**
-   - **Tailored resume:** a one-page resume for that posting. Claude picks the points and phrasings that fit the job; the text is copied from your profile word for word, never reworded. Open it, edit any text in place, hover a bullet to swap it for another phrasing or point, then **Download PDF** (choose "Save as PDF").
+   - **Tailored resume:** a one-page resume for that posting. Claude picks the points and phrasings that fit the job; the text is copied from your profile word for word, never reworded. Open it, edit any text in place, hover a bullet to swap it for another phrasing or point, then **Download PDF** (choose "Save as PDF") or **Download Word** (.docx).
    - **Cover letter:** formal, conversational or enthusiastic tone.
+   - **Formatting:** the toolbar above a resume or letter changes the line you clicked:
+     - bold, italic, underline and text colour, on the words you select (or the whole line)
+     - text size, alignment, and space before or after, with a button that adds a blank line
+     - Shift+Enter starts a new line within a line
+     - section titles can be renamed
+     - **Page** sets the margins, font, text size (or Auto, which shrinks the text to fit one page) and line spacing
+     - Undo and Redo (⌘Z, ⇧⌘Z) cover typing and formatting. **Clear formatting** resets one line, and **Remove all formatting** resets the whole document.
+     - The Word file keeps the same formatting.
    - **Job description:** fetched automatically. If a site blocks it, paste it in.
    - **Honesty checks:** names, employers, dates and links are copied from your profile, never written by Claude. Each document lists the requirements in the posting that you *don't* meet, and flags any number that isn't in your profile.
 4. **Find people** (sidebar): pick a tracked job, then **Recruiters** or **Coffee chats** (people in the role you're applying for).
