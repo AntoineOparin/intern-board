@@ -3,12 +3,15 @@ import tempfile
 import time
 import unittest
 import warnings
+import zipfile
+from io import BytesIO
+from xml.etree import ElementTree
 from pathlib import Path
 from unittest import mock
 
 from fastapi import HTTPException
 
-from board import ai, db, documents, jobs
+from board import ai, db, docx_export, documents, jobs
 
 PROFILE = {
     "name": "Test Person", "email": "t@example.com", "phone": "555 0100", "location": "Waterloo, ON",
@@ -215,6 +218,108 @@ class DocumentsTest(unittest.TestCase):
             documents.get_document(r1["document_id"])
         with db.connect() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM documents WHERE kind = 'outreach'").fetchone()[0], 1)
+
+    # ---------- formatting and Word ----------
+    def formatted_resume(self):
+        r, _ = self.run_job("tailor_resume", {"listing_id": "gh:1"}, RESUME_ANSWER)
+        doc_id = r["document_id"]
+        content = documents.get_document(doc_id)["content"]
+        content["experience"][0]["bullets"][0] = [{"t": "Cut report time "}, {"t": "from 14s to 2s", "b": True},
+                                                  {"t": " & <more>", "c": "#1f3a5f", "u": True}]
+        content["header"]["name"] = [{"t": "Test\nPerson", "i": True}]
+        content["headings"] = {"skills": "Technical skills"}
+        content["format"] = {"page": {"margins": {"top": 0.75, "right": 0.6, "bottom": 0.75, "left": 0.6},
+                                      "size": 10.5, "lineHeight": 1.15, "font": "Georgia"},
+                             "styles": {"header.name": {"align": "left", "size": 2.5},
+                                        "experience.0.bullets.0": {"after": 1, "align": "justify"},
+                                        "experience.0": {"before": 0.5, "after": 1}}}
+        return doc_id, content
+
+    def test_formatting_is_saved(self):
+        doc_id, content = self.formatted_resume()
+        saved = documents.update_document(doc_id, documents.DocumentUpdate(content=content))
+        self.assertEqual(saved["content"]["format"], content["format"])
+        self.assertEqual(saved["content"]["experience"][0]["bullets"][0][1], {"t": "from 14s to 2s", "b": True})
+
+        r, _ = self.run_job("cover_letter", {"listing_id": "gh:1", "tone": "formal"}, LETTER_ANSWER)
+        letter = documents.get_document(r["document_id"])["content"]
+        letter["paragraphs"][0] = [{"t": "Bold", "b": True}, {"t": " start."}]
+        documents.update_document(r["document_id"], documents.DocumentUpdate(content=letter))
+
+    def test_bad_formatting_is_refused(self):
+        doc_id, content = self.formatted_resume()
+        bad = [
+            ("experience", 0, [{"t": "x", "script": "alert(1)"}]),
+            ("experience", 0, [{"t": "x", "c": "red"}]),
+            ("experience", 0, [{"t": "x", "b": "yes"}]),
+            ("format", None, {"page": {"margins": {"top": 3}}}),
+            ("format", None, {"page": {"font": "Comic Sans"}}),
+            ("format", None, {"page": {"size": 30}}),
+            ("format", None, {"styles": {"../x": {"align": "left"}}}),
+            ("format", None, {"styles": {"header.name": {"align": "middle"}}}),
+            ("format", None, {"styles": {"header.name": {"size": True}}}),
+            ("format", None, {"other": 1}),
+            ("headings", None, {"awards": "Prizes"}),
+        ]
+        for field, index, value in bad:
+            c = json.loads(json.dumps(content))
+            if field == "experience":
+                c["experience"][0]["bullets"][index] = value
+            else:
+                c[field] = value
+            with self.subTest(value=value), self.assertRaises(HTTPException) as ctx:
+                documents.update_document(doc_id, documents.DocumentUpdate(content=c))
+            self.assertEqual(ctx.exception.status_code, 422)
+
+    def docx_xml(self, data: bytes, part="word/document.xml"):
+        with zipfile.ZipFile(BytesIO(data)) as z:
+            self.assertIn("[Content_Types].xml", z.namelist())
+            for name in z.namelist():
+                if name.endswith(".xml") or name.endswith(".rels"):
+                    ElementTree.fromstring(z.read(name))  # every part is well-formed XML
+            return z.read(part).decode()
+
+    def test_word_download_keeps_the_formatting(self):
+        doc_id, content = self.formatted_resume()
+        documents.update_document(doc_id, documents.DocumentUpdate(content=content))
+        res = documents.download_docx(doc_id, fs=10.5, sp=0.85)
+        self.assertEqual(res.media_type, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        disposition = res.headers["content-disposition"]
+        self.assertIn('filename="Test Person - Resume - Cresta.docx"', disposition)
+        self.assertIn("filename*=UTF-8''Test%20Person%20%E2%80%93%20Resume", disposition)
+
+        xml = self.docx_xml(res.body)
+        self.assertIn('<w:pgMar w:top="1080" w:right="864" w:bottom="1080" w:left="864"', xml)
+        self.assertIn("<w:b/><w:sz w:val=\"21\"/>", xml)  # the bold run at 10.5pt
+        self.assertIn("from 14s to 2s", xml)
+        self.assertIn("&amp; &lt;more&gt;", xml)
+        self.assertIn('<w:color w:val="1F3A5F"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:u w:val="single"/>', xml)
+        self.assertIn('<w:jc w:val="both"/>', xml)
+        self.assertIn('<w:jc w:val="left"/>', xml)
+        self.assertIn('<w:sz w:val="52"/>', xml)  # the name at 2.5 x 10.5pt
+        self.assertIn("<w:br/>", xml)
+        self.assertIn("Technical skills", xml)
+        self.assertIn('w:numId w:val="1"', xml)
+        self.assertIn('Georgia', self.docx_xml(res.body, "word/styles.xml"))
+
+    def test_word_download_of_unformatted_documents(self):
+        r1, _ = self.run_job("tailor_resume", {"listing_id": "gh:1"}, RESUME_ANSWER)
+        r2, _ = self.run_job("cover_letter", {"listing_id": "gh:1", "tone": "formal"}, LETTER_ANSWER)
+        resume = self.docx_xml(documents.download_docx(r1["document_id"]).body)
+        self.assertIn("Cut report time from 14s to 2s.", resume)
+        self.assertIn("<w:caps/>", resume)  # section headings
+        self.assertIn('<w:pgMar w:top="720" w:right="720"', resume)
+        letter = self.docx_xml(documents.download_docx(r2["document_id"]).body)
+        self.assertIn("Dear Cresta hiring team,", letter)
+        self.assertIn("Sincerely,", letter)
+        with self.assertRaises(HTTPException) as ctx:
+            documents.download_docx("missing")
+        self.assertEqual(ctx.exception.status_code, 404)
+
+    def test_runs_helpers(self):
+        self.assertEqual(docx_export.runs_of("a"), [{"t": "a"}])
+        self.assertEqual(docx_export.runs_of(""), [])
+        self.assertEqual(docx_export.plain([{"t": "a", "b": True}, {"t": "b"}]), "ab")
 
     def test_posting_status(self):
         self.assertFalse(documents.posting_status("gh:1")["available"])

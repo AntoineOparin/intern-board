@@ -120,6 +120,25 @@ export const documents = (listingId: string, o: Quiet = {}) =>
 export const document = (id: string, o: Quiet = {}) => request<T.FullDocument>(`/api/documents/${enc(id)}`, o);
 export const saveDocument = (id: string, content: T.ResumeContent | T.LetterContent) =>
   request<T.DocumentRow>(`/api/documents/${enc(id)}`, { method: "PUT", body: { content } });
+/** The document as a Word file, at the base size and spacing the page fits at. Errors aren't toasted. */
+export async function documentDocx(id: string, fs: number, sp: number): Promise<{ blob: Blob; name: string }> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/documents/${enc(id)}/docx?${query({ fs: String(fs), sp: String(sp) })}`);
+  } catch {
+    throw new ApiError("Couldn't reach Intern Board. Is ./run.sh still running?", 0, false);
+  }
+  if (!res.ok) {
+    let detail = String(res.status);
+    try { detail = errorDetail((await res.json()).detail) ?? detail; } catch { /* not JSON */ }
+    throw new ApiError(detail, res.status, false);
+  }
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const ascii = disposition.match(/filename="([^"]+)"/i);
+  const name = utf8 ? decodeURIComponent(utf8[1]) : ascii?.[1] ?? "Document.docx";
+  return { blob: await res.blob(), name };
+}
 export const deleteDocument = (id: string) => request<{ ok: true }>(`/api/documents/${enc(id)}`, { method: "DELETE" });
 export const postingStatus = (listingId: string, o: Quiet = {}) =>
   request<T.PostingStatus>(`/api/documents/posting/${enc(listingId)}`, o);

@@ -18,18 +18,28 @@ Content JSON stored in `documents.content`:
 
   cover_letter: {tone, header: {...as above}, date, recipient, greeting, paragraphs[], closing,
                  signature, notes: {drew_on[], gaps[], description_used, word_count, checks[]}}
+
+Edits on the document page may add formatting (never generated, only saved):
+  - any line of text (a field, or an item of bullets, details, paragraphs, contact) can be a list of
+    runs instead of a string: [{t, b?, i?, u?, c?: "#rrggbb"}], with "\n" in t for a line break.
+  - format: {page: {margins: {top, right, bottom, left} (inches), size: "auto" | pt, lineHeight, font},
+             styles: {<path, e.g. "experience.0.bullets.2">: {align?, size? (x base size), before?, after? (lines)}}}
+  - headings: {education?, experience?, projects?, skills?}, renamed section titles.
 """
 
 import json
 import re
 import time
+import unicodedata
 import uuid
 from datetime import date
+from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from . import ai, db, honesty, jobs, postings, profile
+from . import ai, db, docx_export, honesty, jobs, postings, profile
 
 router = APIRouter()
 
@@ -445,6 +455,79 @@ class DocumentUpdate(BaseModel):
 
 REQUIRED = {"resume": ("header", "education", "experience", "projects", "skills"),
             "cover_letter": ("greeting", "paragraphs", "closing", "signature")}
+FONTS = ("Source Serif 4", "Georgia", "Times New Roman", "Arial", "Helvetica")
+ALIGNS = ("left", "center", "right", "justify")
+MAX_STYLES = 1000
+_style_key = re.compile(r"^[a-z_]+(\.[a-z0-9_]+)*$")
+_colour = re.compile(r"^#[0-9a-f]{6}$")
+
+
+def _is_runs(value) -> bool:
+    return isinstance(value, list) and bool(value) and all(isinstance(r, dict) and "t" in r for r in value)
+
+
+def _num(value, lo: float, hi: float) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and lo <= value <= hi
+
+
+def _check_runs(runs: list) -> None:
+    for r in runs:
+        if set(r) - {"t", "b", "i", "u", "c"} or not isinstance(r["t"], str):
+            raise HTTPException(422, "Formatted text has an unknown part.")
+        if any(k in r and not isinstance(r[k], bool) for k in ("b", "i", "u")):
+            raise HTTPException(422, "Bold, italic and underline must be true or false.")
+        if "c" in r and not (isinstance(r["c"], str) and _colour.match(r["c"])):
+            raise HTTPException(422, "Text colours must look like #1f3a5f.")
+
+
+def _check_text(value) -> None:
+    """Every list of runs anywhere in the content must be well formed."""
+    if _is_runs(value):
+        _check_runs(value)
+    elif isinstance(value, list):
+        for v in value:
+            _check_text(v)
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            if k != "format":
+                _check_text(v)
+
+
+def _check_format(fmt) -> None:
+    if fmt is None:
+        return
+    if not isinstance(fmt, dict) or set(fmt) - {"page", "styles"}:
+        raise HTTPException(422, "The page format isn't valid.")
+    page = fmt.get("page") or {}
+    if not isinstance(page, dict) or set(page) - {"margins", "size", "lineHeight", "font"}:
+        raise HTTPException(422, "The page format isn't valid.")
+    margins = page.get("margins") or {}
+    if (not isinstance(margins, dict) or set(margins) - {"top", "right", "bottom", "left"}
+            or not all(_num(v, 0.25, 1.5) for v in margins.values())):
+        raise HTTPException(422, "Margins must be between 0.25 and 1.5 inches.")
+    if "size" in page and page["size"] != "auto" and not _num(page["size"], 8, 14):
+        raise HTTPException(422, "The text size must be Auto or between 8 and 14pt.")
+    if "lineHeight" in page and not _num(page["lineHeight"], 1, 2):
+        raise HTTPException(422, "Line spacing must be between 1 and 2.")
+    if "font" in page and page["font"] not in FONTS:
+        raise HTTPException(422, f"The font must be one of: {', '.join(FONTS)}.")
+    styles = fmt.get("styles") or {}
+    if not isinstance(styles, dict) or len(styles) > MAX_STYLES:
+        raise HTTPException(422, "There is too much formatting to save.")
+    for key, st in styles.items():
+        if not _style_key.match(key) or not isinstance(st, dict) or set(st) - {"align", "size", "before", "after"}:
+            raise HTTPException(422, f"The formatting for {key[:60]} isn't valid.")
+        if ("align" in st and st["align"] not in ALIGNS) or ("size" in st and not _num(st["size"], 0.5, 4)) \
+                or any(k in st and not _num(st[k], 0, 4) for k in ("before", "after")):
+            raise HTTPException(422, f"The formatting for {key[:60]} isn't valid.")
+
+
+def _check_headings(headings) -> None:
+    if headings is None:
+        return
+    if not isinstance(headings, dict) or set(headings) - set(docx_export.HEADINGS) \
+            or not all(isinstance(v, str) or _is_runs(v) for v in headings.values()):
+        raise HTTPException(422, "Section titles must be text.")
 
 
 @router.put("/api/documents/{doc_id}")
@@ -457,11 +540,39 @@ def update_document(doc_id: str, body: DocumentUpdate):
         missing = [k for k in REQUIRED[row["kind"]] if k not in body.content]
         if missing:
             raise HTTPException(422, f"The document is missing: {', '.join(missing)}.")
-        if row["kind"] == "cover_letter" and not all(isinstance(p, str) for p in body.content["paragraphs"]):
+        if row["kind"] == "cover_letter" and not all(isinstance(p, str) or _is_runs(p)
+                                                     for p in body.content["paragraphs"]):
             raise HTTPException(422, "Paragraphs must be text.")
+        _check_text(body.content)
+        _check_format(body.content.get("format"))
+        _check_headings(body.content.get("headings"))
         conn.execute("UPDATE documents SET content = ?, title = COALESCE(?, title), updated_at = ? WHERE id = ?",
                      (encoded, body.title, int(time.time()), doc_id))
         return _row(_get(conn, doc_id), _current_version(conn))
+
+
+def _filename(name: str, kind: str, company: str) -> tuple[str, str]:
+    """(ASCII fallback, UTF-8 name) for Content-Disposition."""
+    full = " – ".join(v for v in (name, "Resume" if kind == "resume" else "Cover letter", company) if v)
+    full = re.sub(r'[\\/:*?"<>|\r\n]+', " ", full).strip()[:120] or "Document"
+    ascii_name = unicodedata.normalize("NFKD", full.replace("–", "-")).encode("ascii", "ignore").decode()
+    return f"{ascii_name or 'Document'}.docx", f"{full}.docx"
+
+
+@router.get("/api/documents/{doc_id}/docx")
+def download_docx(doc_id: str, fs: float = 11, sp: float = 1):
+    """The document as a Word file, at the base size and spacing the page fitted to."""
+    with db.connect() as conn:
+        doc = _row(_get(conn, doc_id))
+        listing = conn.execute("SELECT company FROM listings WHERE id = ?", (doc["listing_id"],)).fetchone()
+    content = doc["content"]
+    company = listing["company"] if listing else ""
+    ascii_name, full = _filename(docx_export.plain((content.get("header") or {}).get("name")), doc["kind"], company)
+    data = docx_export.build(doc["kind"], content, fs=min(max(fs, 6), 16), sp=min(max(sp, 0.5), 1.5),
+                             title=full.removesuffix(".docx"))
+    return Response(data, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    headers={"Content-Disposition": f"attachment; filename=\"{ascii_name}\"; "
+                                                    f"filename*=UTF-8''{quote(full)}"})
 
 
 @router.delete("/api/documents/{doc_id}")

@@ -288,10 +288,41 @@ export interface DocumentSummary {
   notes: DocumentNotes;
 }
 
+/** A run of formatted text. A line of a document is a plain string, or runs when it has formatting. */
+export interface Run {
+  t: string; // "\n" is a line break
+  b?: boolean;
+  i?: boolean;
+  u?: boolean;
+  c?: string; // "#rrggbb"
+}
+export type Line = string | Run[];
+
+export type Align = "left" | "center" | "right" | "justify";
+/** Formatting of one element, keyed by its path ("experience.0.bullets.2", "header.name"). */
+export interface LineStyle {
+  align?: Align;
+  size?: number; // a multiple of the base text size
+  before?: number; // extra space, in lines
+  after?: number;
+}
+export const FONTS = ["Source Serif 4", "Georgia", "Times New Roman", "Arial", "Helvetica"] as const;
+export interface PageFormat {
+  margins?: { top: number; right: number; bottom: number; left: number }; // inches
+  size?: "auto" | number; // pt
+  lineHeight?: number;
+  font?: (typeof FONTS)[number];
+}
+export interface DocFormat {
+  page?: PageFormat;
+  styles?: Record<string, LineStyle>;
+}
+export type HeadingKey = "education" | "experience" | "projects" | "skills";
+
 export interface DocHeader {
-  name: string;
-  contact: string[];
-  links: { label: string; url: string }[];
+  name: Line;
+  contact: Line[];
+  links: { label: string; url: Line }[];
 }
 
 /** Where a resume bullet came from: a point in the profile and which of its phrasings. */
@@ -301,30 +332,36 @@ export interface BulletRef {
 }
 export interface ResumeEntry {
   source_id?: string; // the profile entry's id (documents written before points have none)
-  bullets: string[];
+  bullets: Line[];
   refs?: (BulletRef | null)[]; // refs[i] belongs to bullets[i]
 }
 
-export interface ResumeContent {
+/** Formatting added on the document page (never generated). */
+interface Formatting {
+  format?: DocFormat;
+  headings?: Partial<Record<HeadingKey, Line>>;
+}
+
+export interface ResumeContent extends Formatting {
   header: DocHeader;
-  education: { school: string; degree: string; location: string; dates: string; details: string[] }[];
-  experience: (ResumeEntry & { organization: string; role: string; location: string; dates: string })[];
+  education: { school: Line; degree: Line; location: Line; dates: Line; details: Line[] }[];
+  experience: (ResumeEntry & { organization: Line; role: Line; location: Line; dates: Line })[];
   // tech is a string here: the server joins the profile's list with ", ".
-  projects: (ResumeEntry & { name: string; tech: string; link: string; dates: string })[];
-  skills: { label: string; items: string[] }[];
+  projects: (ResumeEntry & { name: Line; tech: Line; link: Line; dates: Line })[];
+  skills: { label: Line; items: string[] }[];
   awards: string[];
   notes: DocumentNotes;
 }
 
-export interface LetterContent {
+export interface LetterContent extends Formatting {
   tone: "formal" | "conversational" | "enthusiastic";
   header: DocHeader;
-  date: string;
-  recipient: string;
-  greeting: string;
-  paragraphs: string[];
-  closing: string;
-  signature: string;
+  date: Line;
+  recipient: Line;
+  greeting: Line;
+  paragraphs: Line[];
+  closing: Line;
+  signature: Line;
   notes: DocumentNotes;
 }
 

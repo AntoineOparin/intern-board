@@ -1,5 +1,6 @@
 // Points and phrasings (board/profile.py): each experience or project holds points, one fact each,
 // said in one or more phrasings. These helpers are pure so they can be tested without a component.
+import { plain } from "./richtext";
 import type { ExperienceEntry, Point, ProfileData, ProjectEntry, ResumeEntry } from "./types";
 
 export type Section = "experience" | "projects";
@@ -80,7 +81,7 @@ export function swapOptions(entry: ResumeEntry, i: number, pool: ProfileData | n
   if (!ref || !pool) return null;
   const hit = indexPoints(pool).get(ref.point_id);
   if (!hit) return null;
-  const current = entry.bullets[i];
+  const current = plain(entry.bullets[i]);
   const phrasings = hit.point.phrasings.map((text, phrasing) => ({ text, phrasing })).filter(o => o.text !== current);
   const used = new Set((entry.refs ?? []).flatMap(r => (r ? [r.point_id] : [])));
   const owner = [...(pool.experience ?? []), ...(pool.projects ?? [])].find(e => e.id === entry.source_id) ?? hit.entry;
